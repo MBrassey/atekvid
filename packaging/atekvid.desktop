@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=atekvid
+GenericName=Video chat
+Comment=Private, end-to-end encrypted video chat
+Exec=atekvid
+Icon=atekvid
+Terminal=false
+Categories=Network;VideoConference;AudioVideo;
+Keywords=video;call;chat;family;
+StartupWMClass=atekvid
