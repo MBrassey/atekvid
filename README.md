@@ -172,8 +172,9 @@ the circle within minutes.
 - **mDNS** on the local network, so two machines on the same Wi-Fi find each
   other with no internet at all.
 - Every client dials every other allow-listed key as soon as it starts and
-  keeps retrying with a short back-off; both sides dialling at once is
-  reconciled deterministically. Links carry QUIC keep-alives every 5 s with a
+  keeps retrying with a short back-off. Between two peers the lower endpoint
+  id dials and the higher one gives it five seconds before dialling itself;
+  when dials still cross, both keep the connection the lower id initiated. Links carry QUIC keep-alives every 5 s with a
   20 s idle timeout, so presence follows reality within seconds.
 
 ### Transport
@@ -388,7 +389,9 @@ the example shipped in every release shows the format.
   and closing it then quits.
 
 `atekvid doctor` checks the sound server, camera, GitHub keys, the relay and
-the identity link, and `atekvid --view health` shows the same live.
+the identity link, and `atekvid --view health` shows the same live. The app
+also writes `~/.cache/atekvid/atekvid.log` (link ups and downs, dial failures,
+update checks); send that file along when reporting a problem.
 
 ## License
 
