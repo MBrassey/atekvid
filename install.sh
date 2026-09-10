@@ -13,6 +13,10 @@
 set -euo pipefail
 
 RELEASES_REPO="MBrassey/atekvid"
+# Public half of the key that signs every release archive (ssh-keygen -Y sign).
+RELEASE_PUBKEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINlC37bWYuceYyD1LCazmK6wyWxsu1P6ju0Qsnroe0l1"
+RELEASE_SIGNER="atekvid-release"
+RELEASE_NAMESPACE="atekvid-release"
 REPO="MBrassey/atekvid.io"
 APP="atekvid"
 PREFIX="${ATEKVID_PREFIX:-$HOME/.local}"
@@ -346,10 +350,19 @@ try_prebuilt() {
   tmp="$(mktemp -d)"
   base="https://github.com/$RELEASES_REPO/releases/latest/download"
   info "Downloading the latest release from github.com/$RELEASES_REPO"
-  if ! curl -fsSL --retry 3 -o "$tmp/$ASSET" "$base/$ASSET" || ! curl -fsSL --retry 3 -o "$tmp/$ASSET.sha256" "$base/$ASSET.sha256"; then
+  if ! curl -fsSL --retry 3 -o "$tmp/$ASSET" "$base/$ASSET" || ! curl -fsSL --retry 3 -o "$tmp/$ASSET.sha256" "$base/$ASSET.sha256" \
+     || ! curl -fsSL --retry 3 -o "$tmp/$ASSET.sig" "$base/$ASSET.sig"; then
     warn "No released build could be downloaded"; rm -rf "$tmp"; return 1
   fi
-  # Verify the checksum published with the release before trusting the archive.
+  # Authenticity: every release archive is signed with the atekvid release key.
+  # ssh-keygen (OpenSSH) checks the signature; it is on virtually every Linux system.
+  have ssh-keygen || { warn "ssh-keygen is needed to verify the release signature (install openssh)"; rm -rf "$tmp"; return 1; }
+  printf '%s %s\n' "$RELEASE_SIGNER" "$RELEASE_PUBKEY" > "$tmp/allowed_signers"
+  if ! ssh-keygen -Y verify -f "$tmp/allowed_signers" -I "$RELEASE_SIGNER" -n "$RELEASE_NAMESPACE" -s "$tmp/$ASSET.sig" < "$tmp/$ASSET" >/dev/null 2>&1; then
+    warn "The downloaded release is NOT signed by the atekvid release key; not installing it"; rm -rf "$tmp"; return 1
+  fi
+  ok "Release signature verified"
+  # Integrity, as published next to the archive.
   if ! (cd "$tmp" && sha256sum -c --quiet "$ASSET.sha256" >/dev/null 2>&1); then
     warn "Checksum mismatch on the downloaded release; not installing it"; rm -rf "$tmp"; return 1
   fi
@@ -424,26 +437,20 @@ esac
 info "Checking the environment"
 "$PREFIX/bin/$APP" doctor 2>/dev/null | sed 's/^/   /' || true
 
-# Registering the key changes your GitHub account, so -y alone never does it:
-# it needs --register-key or an explicit answer at the prompt.
+# Signed in to the GitHub CLI: the device registers itself as a signing key.
+# GitHub grants the signing-key scope once, in the browser; with a terminal
+# that happens right here, otherwise the app finishes it at first start.
 if have gh && gh auth status >/dev/null 2>&1; then
   if ! "$PREFIX/bin/$APP" identity 2>/dev/null | grep -q "Linked to   : github.com/"; then
-    want=0
-    if [ "$REGISTER_KEY" = 1 ]; then want=1
-    elif [ "$ASSUME_YES" = 0 ] && confirm "Register this device's key on your GitHub account as a signing key now?"; then want=1; fi
-    if [ "$want" = 1 ]; then
-      # The signing-key scope is not part of gh's default login.
-      if ! gh auth status 2>&1 | grep -q "admin:ssh_signing_key"; then
-        if has_tty; then
-          info "Granting gh the signing-key scope (a browser window will open)"
-          gh auth refresh -h github.com -s admin:ssh_signing_key < /dev/tty > /dev/tty 2>&1 || warn "scope refresh did not complete"
-        else
-          warn "gh lacks the admin:ssh_signing_key scope; run: gh auth refresh -h github.com -s admin:ssh_signing_key"
-        fi
+    if [ "$REGISTER_KEY" = 1 ] || gh auth status 2>&1 | grep -q "admin:ssh_signing_key" || has_tty; then
+      info "Registering this device's key on your GitHub account (signing key)"
+      if has_tty; then
+        "$PREFIX/bin/$APP" register-key < /dev/tty || warn "Registration did not complete; the app finishes it at first start."
+      else
+        "$PREFIX/bin/$APP" register-key || warn "Registration did not complete; the app finishes it at first start."
       fi
-      "$PREFIX/bin/$APP" register-key || warn "Registration failed; the app's first screen offers other ways."
     else
-      warn "Key not registered yet: run 'atekvid register-key' or use the app's first screen."
+      info "The app links this device to GitHub by itself when you start it."
     fi
   fi
 fi
