@@ -77,8 +77,9 @@ by hand.
   funhouse warps, looks (old film, thermal, night vision, cartoon…), particles
   (hearts, snow, confetti, bubbles, sparkles), a name tag, a speech bubble,
   reaction bursts, and a CRT-style *where am I* map showing your city, nearest
-  cross streets and the hotel, museum or airport you are in. Your own PNG
-  overlays load as plugins.
+  cross streets and the hotel, museum or airport you are in, tucked into a
+  corner and readable in your own mirrored preview. Your own PNG overlays load
+  as plugins.
 - **Chat**, end-to-end encrypted per session, with Markdown, links, a custom
   emoji set drawn in the app's palette, typing indicator and delivery ticks.
   In a group call the chat drawer reaches everyone in the call.
@@ -92,7 +93,9 @@ by hand.
   window, and the tray menu answers, declines, calls, invites and quits.
 - **Devices.** Camera, resolution and frame rate, microphone with meter, gain
   and noise gate, speaker with test tone, one-click echo cancellation using
-  the sound server's WebRTC canceller, and a quality selector.
+  the sound server's WebRTC canceller, and a quality selector. Plug a webcam
+  or a headset in while the app runs and it is picked up within a second; the
+  device you chose is used again whenever it comes back.
 - A launch splash, soft fades, glass surfaces, a custom title bar and window
   controls, a hand-drawn icon set, and quiet sounds for rings, messages, files
   and reactions.
@@ -136,9 +139,10 @@ control bar, reactions, *Add people*, safety codes and statistics.
 <p align="center"><img src="docs/devices.png" width="820" alt="Devices"></p>
 <p align="center"><img src="docs/health.png" width="820" alt="Health"></p>
 
-**First run.** With the GitHub CLI signed in, the device registers its key
-by itself; GitHub asks once, in the browser, whether atekvid may add signing
-keys. Without `gh`, the key is shown to paste on GitHub.
+**First run.** With the GitHub CLI installed, the device links itself: signed
+out, it signs you in; then GitHub asks once, in the browser, whether atekvid
+may add signing keys (the code is on your clipboard). Without `gh`, the key
+is shown to paste on GitHub.
 
 <p align="center"><img src="docs/link.png" width="820" alt="Link this device"></p>
 
