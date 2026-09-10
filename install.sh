@@ -21,6 +21,7 @@ SRC_DIR="$DATA_DIR/src"
 MODE="auto"          # auto | prebuilt | source
 ASSUME_YES=0
 NO_DESKTOP=0
+NO_AUTOSTART=0
 NO_PACKAGES=0
 REGISTER_KEY=0
 DO_UNINSTALL=0
@@ -36,6 +37,7 @@ Options:
   --source          always build from source
   --prefix DIR      install under DIR/bin (default: ~/.local)
   --no-desktop      skip the application-menu entry
+  --no-autostart    do not start atekvid in the tray at login
   --no-packages     do not install system packages (they are already present)
   --register-key    register this device's key on GitHub without asking
   --update          update an existing installation
@@ -52,6 +54,7 @@ while [ $# -gt 0 ]; do
     --prefix) PREFIX="$2"; shift ;;
     --prefix=*) PREFIX="${1#*=}" ;;
     --no-desktop) NO_DESKTOP=1 ;;
+    --no-autostart) NO_AUTOSTART=1 ;;
     --no-packages) NO_PACKAGES=1 ;;
     --register-key) REGISTER_KEY=1 ;;
     --update) DO_UPDATE=1 ;;
@@ -153,7 +156,7 @@ gh_pkg() {
 if [ "$DO_UNINSTALL" = 1 ]; then
   info "Removing $APP"
   rm -f "$PREFIX/bin/$APP" && ok "removed $PREFIX/bin/$APP"
-  rm -f "$HOME/.local/share/applications/$APP.desktop" "$HOME/.local/share/icons/hicolor/256x256/apps/$APP.png"
+  rm -f "$HOME/.local/share/applications/$APP.desktop" "$HOME/.local/share/icons/hicolor/256x256/apps/$APP.png" "$HOME/.config/autostart/$APP.desktop"
   have update-desktop-database && update-desktop-database "$HOME/.local/share/applications" 2>/dev/null || true
   if [ -d "$SRC_DIR" ] && confirm "Delete the downloaded source in $SRC_DIR?" n; then rm -rf "$SRC_DIR"; fi
   warn "Your identity key and settings in ~/.config/atekvid were kept (delete them by hand to unlink this device)."
@@ -308,6 +311,27 @@ DESKTOP
   ok "Added atekvid to the application menu"
 }
 
+# Start in the system tray at login so calls can arrive while the window is closed.
+install_autostart() {
+  [ "$NO_DESKTOP" = 1 ] && return
+  [ "$NO_AUTOSTART" = 1 ] && return
+  local dir="$HOME/.config/autostart"
+  mkdir -p "$dir"
+  cat > "$dir/$APP.desktop" <<DESKTOP
+[Desktop Entry]
+Type=Application
+Name=atekvid
+Comment=Private, end-to-end encrypted video chat
+Exec=$PREFIX/bin/$APP --hidden
+Icon=$APP
+Terminal=false
+X-GNOME-Autostart-enabled=true
+X-GNOME-Autostart-Delay=8
+StartupNotify=false
+DESKTOP
+  ok "atekvid will start in the tray at login (disable with --no-autostart or in the app)"
+}
+
 ASSET="atekvid-x86_64-unknown-linux-gnu.tar.gz"
 
 try_prebuilt() {
@@ -372,6 +396,7 @@ if [ "$installed" = 0 ]; then
   build_from_source
 fi
 install_desktop_entry
+install_autostart
 save_self
 
 case ":$PATH:" in
