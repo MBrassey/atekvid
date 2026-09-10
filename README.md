@@ -90,7 +90,9 @@ by hand.
   written from the already-encoded streams.
 - **Tray.** Closing the window keeps atekvid running: calls, messages and
   files still arrive with desktop notifications, an incoming call opens the
-  window, and the tray menu answers, declines, calls, invites and quits.
+  window, and the tray menu answers, declines, calls, invites and quits. While
+  hidden with no call, the camera and microphone are released, so other
+  programs can use the webcam.
 - **Devices.** Camera, resolution and frame rate, microphone with meter, gain
   and noise gate, speaker with test tone, one-click echo cancellation using
   the sound server's WebRTC canceller, and a quality selector. Plug a webcam
