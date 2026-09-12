@@ -125,25 +125,26 @@ pkg_install() {
   esac
 }
 
+# The PipeWire library is only used by the screen-share helper (Wayland).
 runtime_pkgs() {
   case "$PM" in
-    pacman) echo "libpulse opus libxkbcommon mesa" ;;
-    apt-get) echo "libpulse0 libopus0 libxkbcommon0 libgl1" ;;
-    dnf) echo "pulseaudio-libs opus libxkbcommon mesa-libGL" ;;
-    zypper) echo "libpulse0 libopus0 libxkbcommon0 Mesa-libGL1" ;;
-    apk) echo "pulseaudio-libs opus libxkbcommon mesa-gl" ;;
-    xbps-install) echo "pulseaudio opus libxkbcommon MesaLib" ;;
+    pacman) echo "libpulse opus libxkbcommon mesa libpipewire" ;;
+    apt-get) echo "libpulse0 libopus0 libxkbcommon0 libgl1 libpipewire-0.3-0" ;;
+    dnf) echo "pulseaudio-libs opus libxkbcommon mesa-libGL pipewire-libs" ;;
+    zypper) echo "libpulse0 libopus0 libxkbcommon0 Mesa-libGL1 libpipewire-0_3-0" ;;
+    apk) echo "pulseaudio-libs opus libxkbcommon mesa-gl pipewire-libs" ;;
+    xbps-install) echo "pulseaudio opus libxkbcommon MesaLib pipewire" ;;
   esac
 }
 
 build_pkgs() {
   case "$PM" in
-    pacman) echo "base-devel cmake pkgconf libpulse opus nasm git curl" ;;
-    apt-get) echo "build-essential cmake pkg-config libpulse-dev libopus-dev nasm git curl ca-certificates" ;;
-    dnf) echo "gcc gcc-c++ make cmake pkgconf-pkg-config pulseaudio-libs-devel opus-devel nasm git curl" ;;
-    zypper) echo "gcc gcc-c++ make cmake pkgconf-pkg-config libpulse-devel libopus-devel nasm git curl" ;;
-    apk) echo "build-base cmake pkgconf pulseaudio-dev opus-dev nasm git curl" ;;
-    xbps-install) echo "base-devel cmake pkg-config pulseaudio-devel opus-devel nasm git curl" ;;
+    pacman) echo "base-devel cmake pkgconf libpulse opus nasm git curl libpipewire clang" ;;
+    apt-get) echo "build-essential cmake pkg-config libpulse-dev libopus-dev nasm git curl ca-certificates libpipewire-0.3-dev libclang-dev clang" ;;
+    dnf) echo "gcc gcc-c++ make cmake pkgconf-pkg-config pulseaudio-libs-devel opus-devel nasm git curl pipewire-devel clang-devel clang" ;;
+    zypper) echo "gcc gcc-c++ make cmake pkgconf-pkg-config libpulse-devel libopus-devel nasm git curl pipewire-devel clang-devel clang" ;;
+    apk) echo "build-base cmake pkgconf pulseaudio-dev opus-dev nasm git curl pipewire-dev clang-dev clang" ;;
+    xbps-install) echo "base-devel cmake pkg-config pulseaudio-devel opus-devel nasm git curl pipewire-devel clang libclang" ;;
   esac
 }
 
@@ -159,7 +160,7 @@ gh_pkg() {
 # ---------------------------------------------------------------------------
 if [ "$DO_UNINSTALL" = 1 ]; then
   info "Removing $APP"
-  rm -f "$PREFIX/bin/$APP" && ok "removed $PREFIX/bin/$APP"
+  rm -f "$PREFIX/bin/$APP" "$PREFIX/bin/$APP-screencast" && ok "removed $PREFIX/bin/$APP"
   rm -f "$HOME/.local/share/applications/$APP.desktop" "$HOME/.local/share/icons/hicolor/256x256/apps/$APP.png" "$HOME/.config/autostart/$APP.desktop"
   have update-desktop-database && update-desktop-database "$HOME/.local/share/applications" 2>/dev/null || true
   if [ -d "$SRC_DIR" ] && confirm "Delete the downloaded source in $SRC_DIR?" n; then rm -rf "$SRC_DIR"; fi
@@ -272,11 +273,20 @@ ensure_packages() {
 # Install steps
 # ---------------------------------------------------------------------------
 install_binary() {
-  local src="$1"
+  local src="$1" helper
   mkdir -p "$PREFIX/bin"
   install -m 755 "$src" "$PREFIX/bin/$APP"
   have strip && strip --strip-debug "$PREFIX/bin/$APP" 2>/dev/null || true
   ok "Installed $PREFIX/bin/$APP ($("$PREFIX/bin/$APP" --version 2>/dev/null | awk '{print $2}'))"
+  # Screen sharing on Wayland goes through a helper that sits next to the app.
+  helper="$(dirname "$src")/$APP-screencast"
+  if [ -f "$helper" ]; then
+    install -m 755 "$helper" "$PREFIX/bin/$APP-screencast"
+    have strip && strip --strip-debug "$PREFIX/bin/$APP-screencast" 2>/dev/null || true
+    ok "Installed $PREFIX/bin/$APP-screencast (screen sharing helper)"
+  else
+    warn "No $APP-screencast helper next to the binary; screen sharing on Wayland will be unavailable"
+  fi
 }
 
 # Keep a copy of this script so `atekvid update` can find it later.
