@@ -77,6 +77,17 @@ by hand.
   screens take the stage and the cameras move to a strip beside them. Each
   share is its own end-to-end encrypted stream, up to 1600 px wide, tuned for
   legible text.
+- **Art board.** Draw, paint and collage together, live. Twelve brushes
+  (pen, marker, crayon, spray, rainbow, neon, and heart, star, sparkle,
+  snowflake, confetti and bubble stamps) and an eraser; shapes with a fill;
+  text in six typefaces with an outline; the full emoji set; the effects'
+  props as stickers; and pictures from disk (PNG, JPEG, WebP, BMP, animated
+  GIF) dropped straight onto the board. Everything can be selected, moved,
+  scaled, rotated, layered, duplicated and undone. Boards have a name and a
+  backdrop, live in a gallery with thumbnails, save themselves, are offered
+  to everyone who comes online, and export to PNG. In a call the board takes
+  the stage with the cameras beside it; strokes appear on the others' screens
+  as they are drawn, with everyone's cursor and name.
 - **Presence that is true.** *Online* means the other person's atekvid is
   open. Clients connect to each other the moment they start and drop off the
   list within seconds of closing.
@@ -112,9 +123,13 @@ by hand.
   and reactions.
 
 Keyboard in a call: **M** mute · **V** camera · **X** share screen ·
-**E** effects · **C** chat · **D** drop box · **I** add people ·
-**S** snapshot · **R** record · **F** fullscreen · **Esc** leave fullscreen ·
-**Ctrl+Q** quit.
+**A** art board · **E** effects · **C** chat · **D** drop box · **I** add
+people · **S** snapshot · **R** record · **F** fullscreen · **Esc** leave
+fullscreen · **Ctrl+Q** quit. On the art board: **B** draw · **V** select ·
+**S** shapes · **T** text · **K** stickers · **H** pan · **E** eraser ·
+**Ctrl+Z / Ctrl+Y** undo and redo · **Ctrl+D** duplicate · **Del** delete ·
+**+ − 0** zoom and fit · **Space** or the middle button drags the view ·
+**Ctrl+wheel** zooms.
 
 ## Screens
 
@@ -140,6 +155,27 @@ move to a strip beside it. Several people can share at the same time, and the
 person sharing sees their own share with a *Stop* button.
 
 <p align="center"><img src="docs/call-share.png" width="820" alt="A shared screen in a call"></p>
+
+**Art board.** A shared board two people are drawing on: brushes, shapes,
+text in several typefaces, emoji, stickers and an animated picture, with the
+tools down the side and the brushes along the top.
+
+<p align="center"><img src="docs/art-board.png" width="820" alt="The art board"></p>
+
+**Stickers and pictures.** The sticker panel: emoji, the effects' props, and
+a place to add a picture from disk (or drop one on the board).
+
+<p align="center"><img src="docs/art-stickers.png" width="820" alt="Stickers on the art board"></p>
+
+**The gallery.** Every board the circle has, with a thumbnail, its owner and
+what is on it; a new board takes a name and a backdrop.
+
+<p align="center"><img src="docs/art-gallery.png" width="820" alt="The board gallery"></p>
+
+**The art board in a call.** The board takes the stage and the cameras line
+the side; a slim tool strip stays over the board.
+
+<p align="center"><img src="docs/art-call.png" width="820" alt="The art board in a call"></p>
 
 **Drop box in a call.** A file offered by a participant, ready to download.
 
@@ -291,9 +327,9 @@ sha256sum -c atekvid-x86_64-unknown-linux-gnu.tar.gz.sha256
 |---|---|
 | Transport | QUIC with TLS 1.3 (`rustls`, ring). The peer's certificate *is* its Ed25519 endpoint key; the connection is accepted only if GitHub lists that key for an allow-listed user. |
 | Session keys | Inside every authenticated connection, an ephemeral X25519 exchange per link and per call, HKDF-SHA256 with both endpoint ids and the context (link or call id) in the salt, giving forward secrecy and one key set per direction. |
-| Payloads | ChaCha20-Poly1305 over every chat message, audio packet, video picture and file chunk, with the packet header as associated data. Nonces are `lane ‖ counter`: control, audio, video and each file transfer have their own lane and monotonic counter, so a nonce is never reused. |
+| Payloads | ChaCha20-Poly1305 over every chat message, audio packet, video picture and file chunk, with the packet header as associated data. Nonces are `lane ‖ counter`: control, audio, video, the shared screen, the art board and each file transfer have their own lane and monotonic counter, so a nonce is never reused. |
 | Replay | The receiver keeps an anti-replay window per lane (RFC 6479 style, 2048 deep): every packet is accepted once, late packets within the window are fine, anything older or seen before is dropped. Chat is also de-duplicated by message id. |
-| Bounds | A device flooding control messages loses its link; reactions, typing notices and file offers are rate-limited per device; a link carries a bounded number of pictures in flight, each bounded in size, and nothing is buffered for pictures outside a call; decoded pictures beyond 4096×4096 are refused; chat messages are capped at 8 KiB. |
+| Bounds | A device flooding control messages loses its link; reactions, typing notices and file offers are rate-limited per device; a link carries a bounded number of pictures in flight, each bounded in size, and nothing is buffered for pictures outside a call; decoded pictures beyond 4096×4096 are refused; chat messages are capped at 8 KiB. Art board changes are rate-limited per device and validated (bounded coordinates, points, text and element counts); pictures for the board are content-addressed, capped at 8 MiB and decoded no larger than 1200 px a side. |
 | Accounts | A key listed under two circle accounts is trusted for neither; each login's numeric GitHub id is pinned, so a login that changes hands is not the same person; a key removed from GitHub loses its link at the next refresh; GitHub's rate limits are honoured with validators, so unchanged answers cost no quota. |
 | Verification | A 30-digit safety code per connection, derived from the same exchange, shown in the call. If both screens agree, nobody is in the middle. |
 | Files | Chunks are bound to the transfer id and index, sizes are enforced, names are sanitised, writes go to a `.part` file renamed on completion. Nothing is downloaded until the recipient accepts. |
