@@ -82,9 +82,17 @@ by hand.
   snowflake, confetti and bubble stamps) and an eraser; shapes with a fill;
   text in six typefaces with an outline; the full emoji set; the effects'
   props as stickers; and pictures from disk (PNG, JPEG, WebP, BMP, animated
-  GIF) dropped straight onto the board. Everything can be selected, moved,
+  GIF) dropped straight onto the board. Two sticker packs: a gamer pack (a
+  pixel cube, spikes, a jump orb and a portal, a creeper, blocks, gems and
+  tools, TNT, a blocky avatar, a robot, a rocket, 8-bit hearts and stars) and
+  a sea-and-magic pack (mermaids, shells, fish, a dolphin, angels and wings,
+  hearts of every kind, a rainbow, a castle, a wand, a tiara and more). A
+  pixel brush paints squares on a grid, a glitter brush sparkles in every
+  colour, and starter boards give scenes to add to and pixel pictures to
+  colour in. Everything can be selected, moved,
   scaled, rotated, layered, duplicated and undone. Boards have a name and a
-  backdrop, live in a gallery with thumbnails, save themselves, are offered
+  backdrop (ocean, blocky world, neon, rainbow, clouds, hearts, paper, sky,
+  night and more), live in a gallery with thumbnails, save themselves, are offered
   to everyone who comes online, and export to PNG. In a call the board takes
   the stage with the cameras beside it; strokes appear on the others' screens
   as they are drawn, with everyone's cursor and name.
@@ -161,6 +169,15 @@ text in several typefaces, emoji, stickers and an animated picture, with the
 tools down the side and the brushes along the top.
 
 <p align="center"><img src="docs/art-board.png" width="820" alt="The art board"></p>
+
+**Starter boards.** Scenes to add to and pixel pictures to colour in, with a
+sticker pack for gamers and one for mermaid-and-angel fans.
+
+<p align="center"><img src="docs/art-sea.png" width="820" alt="Under the sea"></p>
+<p align="center"><img src="docs/art-pixel.png" width="820" alt="Pixel world with the gamer stickers"></p>
+<p align="center"><img src="docs/art-geometry.png" width="820" alt="Geometry run"></p>
+<p align="center"><img src="docs/art-magic.png" width="820" alt="Angel clouds with the sea-and-magic stickers"></p>
+<p align="center"><img src="docs/art-colour.png" width="820" alt="A pixel colouring page, filled in with the pixel brush"></p>
 
 **Stickers and pictures.** The sticker panel: emoji, the effects' props, and
 a place to add a picture from disk (or drop one on the board).
