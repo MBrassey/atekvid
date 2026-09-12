@@ -33,8 +33,9 @@ DO_UPDATE=0
 MIN_RUST="1.85"
 
 usage() {
-  sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'
   cat <<USAGE
+atekvid installer: installs the app, the screen-sharing helper, a menu entry
+and a login autostart entry, from the signed public release (or from source).
 
 Options:
   --prebuilt        only use a released binary (fails if none fits this machine)
@@ -55,7 +56,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --prebuilt) MODE=prebuilt ;;
     --source) MODE=source ;;
-    --prefix) PREFIX="$2"; shift ;;
+    --prefix) [ $# -ge 2 ] || { echo "--prefix needs a directory" >&2; exit 2; }; PREFIX="$2"; shift ;;
     --prefix=*) PREFIX="${1#*=}" ;;
     --no-desktop) NO_DESKTOP=1 ;;
     --no-autostart) NO_AUTOSTART=1 ;;
@@ -160,10 +161,18 @@ gh_pkg() {
 # ---------------------------------------------------------------------------
 if [ "$DO_UNINSTALL" = 1 ]; then
   info "Removing $APP"
-  rm -f "$PREFIX/bin/$APP" "$PREFIX/bin/$APP-screencast" && ok "removed $PREFIX/bin/$APP"
+  if [ -e "$PREFIX/bin/$APP" ]; then rm -f "$PREFIX/bin/$APP" "$PREFIX/bin/$APP-screencast" && ok "removed $PREFIX/bin/$APP"; else warn "$PREFIX/bin/$APP was not installed"; fi
   rm -f "$HOME/.local/share/applications/$APP.desktop" "$HOME/.local/share/icons/hicolor/256x256/apps/$APP.png" "$HOME/.config/autostart/$APP.desktop"
+  rm -f "$DATA_DIR/install.sh" "$HOME/.config/fish/conf.d/atekvid.fish"
+  rmdir "$DATA_DIR" 2>/dev/null || true
+  for rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+    if [ -f "$rc" ] && grep -qF '# atekvid' "$rc"; then
+      sed -i '/^# atekvid$/{N;/\/bin:/d}' "$rc" 2>/dev/null || true
+    fi
+  done
   have update-desktop-database && update-desktop-database "$HOME/.local/share/applications" 2>/dev/null || true
   if [ -d "$SRC_DIR" ] && confirm "Delete the downloaded source in $SRC_DIR?" n; then rm -rf "$SRC_DIR"; fi
+  if [ -d "$HOME/.cache/atekvid" ] && confirm "Delete the cache in ~/.cache/atekvid (map tiles, avatars, log)?" n; then rm -rf "$HOME/.cache/atekvid"; fi
   warn "Your identity key and settings in ~/.config/atekvid were kept (delete them by hand to unlink this device)."
   exit 0
 fi
@@ -272,21 +281,30 @@ ensure_packages() {
 # ---------------------------------------------------------------------------
 # Install steps
 # ---------------------------------------------------------------------------
+# Every step checks its own result: inside a function used as a condition,
+# `set -e` does not stop anything.
 install_binary() {
-  local src="$1" helper
-  mkdir -p "$PREFIX/bin"
-  install -m 755 "$src" "$PREFIX/bin/$APP"
+  local src="$1" helper ver
+  mkdir -p "$PREFIX/bin" || { warn "cannot create $PREFIX/bin"; return 1; }
+  install -m 755 "$src" "$PREFIX/bin/$APP" || { warn "cannot write $PREFIX/bin/$APP"; return 1; }
   have strip && strip --strip-debug "$PREFIX/bin/$APP" 2>/dev/null || true
-  ok "Installed $PREFIX/bin/$APP ($("$PREFIX/bin/$APP" --version 2>/dev/null | awk '{print $2}'))"
+  ver="$("$PREFIX/bin/$APP" --version 2>/dev/null | awk '{print $2}')"
+  [ -n "$ver" ] || { warn "$PREFIX/bin/$APP does not run"; return 1; }
+  ok "Installed $PREFIX/bin/$APP ($ver)"
   # Screen sharing on Wayland goes through a helper that sits next to the app.
   helper="$(dirname "$src")/$APP-screencast"
   if [ -f "$helper" ]; then
-    install -m 755 "$helper" "$PREFIX/bin/$APP-screencast"
+    install -m 755 "$helper" "$PREFIX/bin/$APP-screencast" || { warn "cannot write $PREFIX/bin/$APP-screencast"; return 1; }
     have strip && strip --strip-debug "$PREFIX/bin/$APP-screencast" 2>/dev/null || true
     ok "Installed $PREFIX/bin/$APP-screencast (screen sharing helper)"
   else
     warn "No $APP-screencast helper next to the binary; screen sharing on Wayland will be unavailable"
   fi
+  # The installer that came with this release is what `atekvid update` runs later.
+  if [ -f "$(dirname "$src")/install.sh" ]; then
+    mkdir -p "$DATA_DIR" && cp "$(dirname "$src")/install.sh" "$DATA_DIR/install.sh" && chmod +x "$DATA_DIR/install.sh" || true
+  fi
+  return 0
 }
 
 # Keep a copy of this script so `atekvid update` can find it later.
@@ -313,7 +331,7 @@ Type=Application
 Name=atekvid
 GenericName=Video chat
 Comment=Private, end-to-end encrypted video chat
-Exec=$PREFIX/bin/$APP
+Exec="$PREFIX/bin/$APP"
 Icon=$APP
 Terminal=false
 Categories=Network;VideoConference;AudioVideo;
@@ -336,7 +354,7 @@ install_autostart() {
 Type=Application
 Name=atekvid
 Comment=Private, end-to-end encrypted video chat
-Exec=$PREFIX/bin/$APP --hidden
+Exec="$PREFIX/bin/$APP" --hidden
 Icon=$APP
 Terminal=false
 X-GNOME-Autostart-enabled=true
@@ -358,6 +376,7 @@ try_prebuilt() {
   fi
   have curl || { warn "curl is needed to download releases"; return 1; }
   tmp="$(mktemp -d)"
+  TMP_TO_CLEAN="$tmp"
   base="https://github.com/$RELEASES_REPO/releases/latest/download"
   info "Downloading the latest release from github.com/$RELEASES_REPO"
   if ! curl -fsSL --retry 3 -o "$tmp/$ASSET" "$base/$ASSET" || ! curl -fsSL --retry 3 -o "$tmp/$ASSET.sha256" "$base/$ASSET.sha256" \
@@ -377,14 +396,15 @@ try_prebuilt() {
     warn "Checksum mismatch on the downloaded release; not installing it"; rm -rf "$tmp"; return 1
   fi
   ok "Release checksum verified"
-  tar -xzf "$tmp/$ASSET" -C "$tmp"
+  tar -xzf "$tmp/$ASSET" -C "$tmp" || { warn "The downloaded archive could not be unpacked"; rm -rf "$tmp"; return 1; }
   local bin
   bin="$(find "$tmp" -type f -name "$APP" | head -n1)"
   if [ -z "$bin" ] || ! "$bin" --version >/dev/null 2>&1; then
     warn "The released binary does not run here; building from source instead"; rm -rf "$tmp"; return 1
   fi
-  install_binary "$bin"
+  install_binary "$bin" || { rm -rf "$tmp"; return 1; }
   rm -rf "$tmp"
+  TMP_TO_CLEAN=""
   return 0
 }
 
@@ -394,12 +414,17 @@ build_from_source() {
   [ -n "$CHECKOUT" ] || clone_or_update_source
   info "Building $APP in release mode (a few minutes the first time)"
   (cd "$CHECKOUT" && cargo build --release --quiet)
-  install_binary "$CHECKOUT/target/release/$APP"
+  install_binary "$CHECKOUT/target/release/$APP" || die "installation failed"
 }
 
 # ---------------------------------------------------------------------------
-# Main
+# Main (a function, so a partially downloaded script never runs half-way)
 # ---------------------------------------------------------------------------
+TMP_TO_CLEAN=""
+cleanup() { [ -n "${TMP_TO_CLEAN:-}" ] && rm -rf "$TMP_TO_CLEAN"; return 0; }
+trap cleanup EXIT
+
+main() {
 info "atekvid installer"
 [ "$(uname -s)" = Linux ] || die "this installer is for Linux"
 [ -n "$PM" ] && ok "Package manager: $PM" || warn "No known package manager found"
@@ -436,7 +461,7 @@ case ":$PATH:" in
         fi
       done
       if [ -d "$HOME/.config/fish" ] && confirm "Add it for fish too?"; then
-        mkdir -p "$HOME/.config/fish/conf.d"; printf 'fish_add_path -g %s/bin\n' "$PREFIX" > "$HOME/.config/fish/conf.d/atekvid.fish"; ok "updated fish"
+        mkdir -p "$HOME/.config/fish/conf.d"; printf "fish_add_path -g '%s/bin'\n" "$PREFIX" > "$HOME/.config/fish/conf.d/atekvid.fish"; ok "updated fish"
       fi
     else
       warn "Add it yourself, e.g.:  export PATH=\"$PREFIX/bin:\$PATH\""
@@ -467,3 +492,6 @@ fi
 
 printf '\n%sAll set.%s Start it from the application menu or run: %s\n' "$C_OK" "$C_RESET" "$APP"
 printf '%sUpdate later with:%s atekvid update\n' "$C_DIM" "$C_RESET"
+}
+
+main "$@"
