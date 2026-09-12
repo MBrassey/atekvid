@@ -57,6 +57,7 @@ by hand.
 | Sound | PipeWire (`pipewire-pulse`) or PulseAudio |
 | Camera | any V4L2 camera (MJPEG, YUYV, NV12, RGB); optional, a test pattern stands in |
 | Display | X11 or Wayland; OpenGL 3.x |
+| Screen sharing | Wayland: the desktop's ScreenCast portal (`xdg-desktop-portal` with the KDE, GNOME, wlr or Hyprland backend) and PipeWire. X11: nothing extra |
 | Tray | KDE, Cinnamon, XFCE, MATE, LXQt, Budgie; GNOME with the AppIndicator extension Ubuntu ships |
 | Account | a GitHub account on the circle's allow-list, with this device's key registered as an SSH signing key |
 
@@ -69,6 +70,13 @@ by hand.
   Every participant holds a direct encrypted media session with every other
   participant, everyone sees and hears everyone, and every connection has its
   own safety code.
+- **Screen sharing.** Share a screen or a single window with everyone in the
+  call; several people can share at once. On Wayland the desktop's own picker
+  chooses what is shared (through the ScreenCast portal and PipeWire); on X11
+  any monitor or window is captured directly, pointer included. Shared
+  screens take the stage and the cameras move to a strip beside them. Each
+  share is its own end-to-end encrypted stream, up to 1600 px wide, tuned for
+  legible text.
 - **Presence that is true.** *Online* means the other person's atekvid is
   open. Clients connect to each other the moment they start and drop off the
   list within seconds of closing.
@@ -76,10 +84,11 @@ by hand.
   props (sunglasses, hats, crown, cat and bunny ears, mustache, googly eyes…),
   funhouse warps, looks (old film, thermal, night vision, cartoon…), particles
   (hearts, snow, confetti, bubbles, sparkles), a name tag, a speech bubble,
-  reaction bursts, and a CRT-style *where am I* map showing your city, nearest
-  cross streets and the hotel, museum or airport you are in, tucked into a
-  corner and readable in your own mirrored preview. Your own PNG overlays load
-  as plugins.
+  reaction bursts, and a translucent CRT-style *where am I* map showing your
+  city, nearest cross streets, the hotel, museum or airport you are in, a
+  scale bar and a north arrow, tucked into a corner. Your own PNG overlays
+  load as plugins. Text and the map are drawn over your mirrored self-preview
+  the right way round, so you read exactly what everyone else sees.
 - **Chat**, end-to-end encrypted per session, with Markdown, links, a custom
   emoji set drawn in the app's palette, typing indicator and delivery ticks.
   In a group call the chat drawer reaches everyone in the call.
@@ -102,9 +111,10 @@ by hand.
   controls, a hand-drawn icon set, and quiet sounds for rings, messages, files
   and reactions.
 
-Keyboard in a call: **M** mute · **V** camera · **E** effects · **C** chat ·
-**D** drop box · **I** add people · **S** snapshot · **R** record ·
-**F** fullscreen · **Esc** leave fullscreen · **Ctrl+Q** quit.
+Keyboard in a call: **M** mute · **V** camera · **X** share screen ·
+**E** effects · **C** chat · **D** drop box · **I** add people ·
+**S** snapshot · **R** record · **F** fullscreen · **Esc** leave fullscreen ·
+**Ctrl+Q** quit.
 
 ## Screens
 
@@ -124,6 +134,12 @@ ring, connection quality and a name pill; your own picture in the corner; the
 control bar, reactions, *Add people*, safety codes and statistics.
 
 <p align="center"><img src="docs/call.png" width="820" alt="Group call"></p>
+
+**Screen sharing.** A participant's shared window takes the stage; the cameras
+move to a strip beside it. Several people can share at the same time, and the
+person sharing sees their own share with a *Stop* button.
+
+<p align="center"><img src="docs/call-share.png" width="820" alt="A shared screen in a call"></p>
 
 **Drop box in a call.** A file offered by a participant, ready to download.
 
@@ -206,19 +222,30 @@ the call continues for the rest.
 camera (V4L2) → JPEG/YUV decode → effects (face tracking, sprites, warps, map)
    → OpenH264 encode (adaptive ladder 180p…1080p) → seal → QUIC streams
 microphone (Pulse/PipeWire) → gain, noise gate → Opus (32 kb/s, FEC) → seal → datagrams
-network → open → per-participant OpenH264 decoders → tiles
+shared screen (portal + PipeWire helper, or X11 GetImage) → scale to ≤1600 px
+   → OpenH264 encode (10 fps, own bit budget) → seal → QUIC streams
+network → open → per-participant OpenH264 decoders (camera and screen) → tiles
 network → open → per-participant Opus decoders + jitter buffers → mix → speaker
 ```
 
 Encoding happens once per frame regardless of participants. The encoder
 ladder reacts to send latency and queue depth; a keyframe is requested
 whenever a participant loses sync. Recording muxes the already-encoded H.264
-and both voices into MKV, so it costs nothing extra.
+and both voices into MKV, so it costs nothing extra. A shared screen travels
+as a second video stream on its own key lane; on Wayland the capture runs in
+the separate `atekvid-screencast` process (XDG ScreenCast portal, PipeWire),
+so the app itself links no PipeWire library and a portal problem cannot touch
+a call; on X11 the app reads the X server directly (RandR monitors, any
+window, XFixes cursor).
 
 ### Effects and the map
 
 Face detection uses a bundled SeetaFace model (`rustface`), sprites are drawn
-with `tiny-skia`, text with `ab_glyph`. Plugins are folders with a `plugin.toml`
+with `tiny-skia`, text with `ab_glyph`. Effects are baked into the outgoing
+picture; the name tag, the speech bubble and the map are composed last and
+reported to the interface as layers, which draws them over the mirrored
+self-preview without mirroring the text (a bubble's tail still flips with the
+face it points at). Plugins are folders with a `plugin.toml`
 and PNG layers anchored to face landmarks. The map overlay locates the machine
 through nearby Wi-Fi networks (BeaconDB) or the public IP, describes the place
 with OpenStreetMap data (Nominatim, Overpass) and renders CARTO dark tiles in a
@@ -232,12 +259,14 @@ because Wayland allows neither hiding nor restoring a window on request; the
 application state lives on regardless. The tray item speaks the
 StatusNotifierItem protocol over D-Bus (pure Rust, `ksni`); notifications use
 `org.freedesktop.Notifications`. The installer adds a `.desktop` entry and a
-login autostart entry (`atekvid --hidden`).
+login autostart entry (`atekvid --hidden`), and puts the `atekvid-screencast`
+helper next to the app.
 
 ### Releases and updates
 
 Releases are built on Ubuntu 22.04 by GitHub Actions in the private source
-repository and published here. Each archive is signed with the atekvid release
+repository and published here. The archive holds the app, the
+`atekvid-screencast` helper, the installer and the packaging files. Each archive is signed with the atekvid release
 key using OpenSSH signatures (`ssh-keygen -Y sign`, namespace
 `atekvid-release`); the public half is compiled into the app and written into
 `install.sh`. The app refuses any update whose signature does not verify, and
@@ -295,6 +324,8 @@ atekvid is written in Rust. The main building blocks:
 | Sprites, overlays, text | `tiny-skia`, `ab_glyph`, `image` | 0.12.0, 0.2.32, 0.25.10 |
 | Key exchange and encryption | `x25519-dalek`, `hkdf`, `sha2`, `chacha20poly1305` | 3.0.0, 0.13.0, 0.11.0, 0.11.0 |
 | Release signature verification | `ssh-key` | 0.6.7 |
+| Screen sharing (Wayland portal, PipeWire; helper only) | `ashpd`, `pipewire`, `libspa` | 0.13.13, 0.10.1, 0.10.1 |
+| Screen sharing (X11 capture) | `x11rb` (RandR, XFixes) | 0.14 |
 | Async runtime | `tokio` | 1.53 |
 | Wire format | `postcard`, `serde` | 1.1.3 |
 | System tray, notifications | `ksni`, `notify-rust` | 0.3.6, 4.17.0 |
@@ -304,7 +335,8 @@ atekvid is written in Rust. The main building blocks:
 Runtime dependencies of the binary are the C libraries `libpulse`,
 `libpulse-simple` and `libopus` (with what they pull in: `libsndfile`,
 `libdbus`, `libxcb`); everything else, including the H.264 codec and TLS, is
-compiled in. The archive is about 19 MB.
+compiled in. The `atekvid-screencast` helper additionally needs
+`libpipewire-0.3`. The archive is about 20 MB.
 
 ## Command line
 
@@ -386,12 +418,18 @@ the example shipped in every release shows the format.
   pattern.
 - **The update was refused.** The archive's signature did not verify against
   the release key. Do not install it; the same check protects the installer.
+- **Share screen does nothing, or says the helper is missing.** On Wayland
+  sharing needs `atekvid-screencast` next to the app (the installer puts it
+  there) and a desktop that offers the ScreenCast portal; `atekvid doctor`
+  says which. On X11 the whole screen is offered only when the X server lets
+  the root window be read (under Xwayland only windows can be shared).
+  `ATEKVID_SHARE_BACKEND=x11` or `=portal` forces one path.
 - **Nothing in the tray on GNOME.** Install the AppIndicator extension
   (`gnome-shell-extension-appindicator`); the window still works without it,
   and closing it then quits.
 
-`atekvid doctor` checks the sound server, camera, GitHub keys, the relay and
-the identity link, and `atekvid --view health` shows the same live. The app
+`atekvid doctor` checks the sound server, camera, screen sharing, GitHub
+keys, the relay and the identity link, and `atekvid --view health` shows the same live. The app
 also writes `~/.cache/atekvid/atekvid.log` (link ups and downs, dial failures,
 update checks); send that file along when reporting a problem.
 
