@@ -35,14 +35,17 @@ openSUSE, Void and Alpine (x86_64). The script:
 2. downloads the latest release, **verifies its Ed25519 signature** against
    the atekvid release key and its SHA-256 checksum;
 3. installs `atekvid` to `~/.local/bin`, adds it to the application menu with
-   the logo, and starts it in the system tray at login;
+   the logo, pins it to your panel once (the taskbar or dock on Cinnamon,
+   GNOME and KDE Plasma; take it off and it stays off), and starts it in the
+   system tray at login;
 4. registers this device's key on your GitHub account when the GitHub CLI is
    signed in (GitHub asks once, in the browser); otherwise the app does it at
    first start.
 
 Prefer not to pipe from the network? Download the release archive, check the
 `.sig` and `.sha256`, extract, and run `./install.sh` from it. `install.sh
---help` lists the options (`--prefix`, `--no-autostart`, `--uninstall`, …).
+--help` lists the options (`--prefix`, `--no-pin`, `--no-autostart`,
+`--uninstall`, …).
 
 **Updating** happens by itself: the app checks these releases shortly after
 launch and every six hours, verifies the signature, installs the new binary
@@ -55,7 +58,7 @@ by hand.
 |---|---|
 | CPU / OS | x86_64 Linux, glibc 2.35 or newer (Mint 21+, Ubuntu 22.04+, Debian 12+, Fedora 36+, Arch and derivatives) |
 | Sound | PipeWire (`pipewire-pulse`) or PulseAudio |
-| Camera | any V4L2 camera (MJPEG, YUYV, NV12, RGB); optional, a test pattern stands in |
+| Camera | any V4L2 camera (MJPEG, YUYV, UYVY, NV12, NV21, YU12, YV12, grey, RGB); optional, a test pattern stands in |
 | Display | X11 or Wayland; OpenGL 3.x |
 | Screen sharing | Wayland: the desktop's ScreenCast portal (`xdg-desktop-portal` with the KDE, GNOME, wlr or Hyprland backend) and PipeWire. X11: nothing extra |
 | Tray | KDE, Cinnamon, XFCE, MATE, LXQt, Budgie; GNOME with the AppIndicator extension Ubuntu ships |
@@ -538,6 +541,15 @@ the example shipped in every release shows the format.
   offers, including the default the server picks.
 - **Camera busy.** Another program holds the device; close it or pick the test
   pattern.
+- **The camera takes a moment, or shows nothing.** Some cameras (the Logitech
+  Brio 500 among them) deliver their first picture a second or two after
+  they start. atekvid waits up to eight seconds for it, skips frames the
+  driver marks as damaged, supplies the tables of MJPEG frames that leave
+  them out, reopens a camera that stalls, and tries up to four of the
+  camera's modes (the last a small one, for busy USB hubs) before it reports
+  a problem. `atekvid camera-test` saves one frame through the same path and
+  says how long the first picture took; `~/.cache/atekvid/atekvid.log` lists
+  what was tried.
 - **The update was refused.** The archive's signature did not verify against
   the release key. Do not install it; the same check protects the installer.
 - **Share screen does nothing, or says the helper is missing.** On Wayland
