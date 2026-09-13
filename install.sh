@@ -26,6 +26,7 @@ MODE="auto"          # auto | prebuilt | source
 ASSUME_YES=0
 NO_DESKTOP=0
 NO_AUTOSTART=0
+NO_PIN=0
 NO_PACKAGES=0
 REGISTER_KEY=0
 DO_UNINSTALL=0
@@ -42,6 +43,7 @@ Options:
   --source          always build from source
   --prefix DIR      install under DIR/bin (default: ~/.local)
   --no-desktop      skip the application-menu entry
+  --no-pin          do not pin atekvid to the panel (taskbar or dock)
   --no-autostart    do not start atekvid in the tray at login
   --no-packages     do not install system packages (they are already present)
   --register-key    register this device's key on GitHub without asking
@@ -59,6 +61,7 @@ while [ $# -gt 0 ]; do
     --prefix) [ $# -ge 2 ] || { echo "--prefix needs a directory" >&2; exit 2; }; PREFIX="$2"; shift ;;
     --prefix=*) PREFIX="${1#*=}" ;;
     --no-desktop) NO_DESKTOP=1 ;;
+    --no-pin) NO_PIN=1 ;;
     --no-autostart) NO_AUTOSTART=1 ;;
     --no-packages) NO_PACKAGES=1 ;;
     --register-key) REGISTER_KEY=1 ;;
@@ -98,6 +101,99 @@ confirm() {
 }
 
 has_tty() { { : < /dev/tty; } 2>/dev/null; }
+
+# ---------------------------------------------------------------------------
+# Panel pinning
+# ---------------------------------------------------------------------------
+
+# Edit a list inside a JSON settings file (Cinnamon's applet settings):
+# json_list FILE add|remove ENTRY KEY...  (the first KEY present is edited).
+# Succeeds when the entry ends up where it was asked to be.
+json_list() {
+  have python3 || return 1
+  python3 - "$@" <<'PY'
+import json, os, sys
+path, op, entry, keys = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4:]
+try:
+    with open(path) as f:
+        data = json.load(f)
+except Exception:
+    sys.exit(1)
+for key in keys:
+    node = data.get(key)
+    if not isinstance(node, dict) or not isinstance(node.get("value"), list):
+        continue
+    items = node["value"]
+    if (op == "add") == (entry in items):
+        sys.exit(0)
+    node["value"] = items + [entry] if op == "add" else [x for x in items if x != entry]
+    tmp = path + ".atekvid-tmp"
+    with open(tmp, "w") as f:
+        json.dump(data, f, indent=4)
+    os.replace(tmp, path)
+    sys.exit(0)
+sys.exit(1)
+PY
+}
+
+# Edit a gsettings list of desktop files: gsettings_list SCHEMA KEY add|remove ENTRY
+gsettings_list() {
+  local schema="$1" key="$2" op="$3" entry="$4" cur
+  have gsettings || return 1
+  gsettings list-keys "$schema" 2>/dev/null | grep -qx "$key" || return 1
+  cur=$(gsettings get "$schema" "$key" 2>/dev/null) || return 1
+  case "$op" in
+    add)
+      printf '%s' "$cur" | grep -qF "'$entry'" && return 0
+      if printf '%s' "$cur" | grep -q '\[\]'; then gsettings set "$schema" "$key" "['$entry']"
+      else gsettings set "$schema" "$key" "$(printf '%s' "$cur" | sed "s/]\$/, '$entry']/")"; fi ;;
+    remove)
+      printf '%s' "$cur" | grep -qF "'$entry'" || return 0
+      gsettings set "$schema" "$key" "$(printf '%s' "$cur" | sed "s/, *'$entry'//; s/'$entry', *//; s/\['$entry'\]/[]/")" ;;
+  esac
+}
+
+# Put atekvid on the panel the way a person would pin it: the pinned apps of
+# Cinnamon's window list and panel launchers, the dock on GNOME, and the task
+# manager on KDE Plasma. Other desktops keep the menu entry.
+# "pin_to_panel remove" takes it off again.
+pin_to_panel() {
+  local op="${1:-add}" entry="$APP.desktop" pinned=0 f js
+  for f in "${XDG_CONFIG_HOME:-$HOME/.config}"/cinnamon/spices/grouped-window-list@cinnamon.org/*.json \
+           "${XDG_CONFIG_HOME:-$HOME/.config}"/cinnamon/spices/panel-launchers@cinnamon.org/*.json \
+           "$HOME"/.cinnamon/configs/grouped-window-list@cinnamon.org/*.json \
+           "$HOME"/.cinnamon/configs/panel-launchers@cinnamon.org/*.json; do
+    [ -f "$f" ] || continue
+    json_list "$f" "$op" "$entry" pinned-apps launcherList && pinned=1
+  done
+  case ":${XDG_CURRENT_DESKTOP:-}:" in
+    *:GNOME:*) gsettings_list org.gnome.shell favorite-apps "$op" "$entry" && pinned=1 ;;
+  esac
+  if pgrep -x plasmashell >/dev/null 2>&1; then
+    js="const e = 'applications:$entry'; for (const p of panels()) { for (const id of p.widgetIds) { const w = p.widgetById(id); if (w.type !== 'org.kde.plasma.icontasks' && w.type !== 'org.kde.plasma.taskmanager') continue; w.currentConfigGroup = ['General']; const raw = w.readConfig('launchers', ''); const list = Array.isArray(raw) ? raw.slice() : String(raw).split(',').filter(Boolean); const i = list.indexOf(e); if ('$op' === 'add' && i < 0) list.push(e); if ('$op' === 'remove' && i >= 0) list.splice(i, 1); w.writeConfig('launchers', list.join(',')); } }"
+    if have qdbus6; then qdbus6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript "$js" >/dev/null 2>&1 && pinned=1
+    elif have qdbus; then qdbus org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript "$js" >/dev/null 2>&1 && pinned=1
+    elif have gdbus; then gdbus call --session --dest org.kde.plasmashell --object-path /PlasmaShell --method org.kde.PlasmaShell.evaluateScript "$js" >/dev/null 2>&1 && pinned=1
+    fi
+  fi
+  if [ "$op" = add ]; then
+    if [ "$pinned" = 1 ]; then ok "Pinned atekvid to the panel (on Cinnamon it may show after your next login)"
+    else warn "Could not pin atekvid to this desktop's panel; drag it there from the application menu"; fi
+  fi
+  return 0
+}
+
+# Pin once: on a fresh install, or on the first update that knows how. Taking
+# it off the panel afterwards is respected, and --no-pin records that choice.
+# The app does the same at its first start after an in-place update.
+pin_once() {
+  local note='pinned by the installer'
+  [ "$NO_DESKTOP" = 1 ] && return 0
+  [ -e "$DATA_DIR/panel-pinned" ] && return 0
+  if [ "$NO_PIN" = 1 ]; then note='left off the panel (--no-pin)'; else pin_to_panel add; fi
+  mkdir -p "$DATA_DIR" 2>/dev/null && printf '%s\n' "$note" > "$DATA_DIR/panel-pinned" 2>/dev/null
+  return 0
+}
 
 as_root() {
   if [ "$(id -u)" = 0 ]; then "$@"
@@ -162,6 +258,8 @@ gh_pkg() {
 if [ "$DO_UNINSTALL" = 1 ]; then
   info "Removing $APP"
   if [ -e "$PREFIX/bin/$APP" ]; then rm -f "$PREFIX/bin/$APP" "$PREFIX/bin/$APP-screencast" && ok "removed $PREFIX/bin/$APP"; else warn "$PREFIX/bin/$APP was not installed"; fi
+  pin_to_panel remove
+  rm -f "$DATA_DIR/panel-pinned"
   rm -f "$HOME/.local/share/applications/$APP.desktop" "$HOME/.local/share/icons/hicolor/256x256/apps/$APP.png" "$HOME/.config/autostart/$APP.desktop"
   rm -f "$DATA_DIR/install.sh" "$HOME/.config/fish/conf.d/atekvid.fish"
   rmdir "$DATA_DIR" 2>/dev/null || true
@@ -444,6 +542,7 @@ if [ "$installed" = 0 ]; then
   build_from_source
 fi
 install_desktop_entry
+pin_once
 install_autostart
 save_self
 
