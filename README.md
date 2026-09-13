@@ -82,7 +82,11 @@ by hand.
   can make it private from the call's header; a private call still shows who
   is in it, but nobody can walk in. People who arrive at the same moment
   find each other on their own, so a call of four always ends up with
-  everyone connected to everyone.
+  everyone connected to everyone. While a call is open, the people in it
+  show as small live pictures under *Happening now* (and when you rest on
+  the status bar's note), refreshed every couple of seconds, with no sound
+  and nothing shared but their camera; everyone in the call sees who is
+  looking in.
 - **Screen sharing.** Share a screen or a single window with everyone in the
   call; several people can share at once. On Wayland the desktop's own picker
   chooses what is shared (through the ScreenCast portal and PipeWire); on X11
@@ -294,8 +298,9 @@ and Voice out put your voice through a rack, here the Robot voice.
 <p align="center"><img src="docs/voice-call.png" width="820" alt="The voice changer on a call"></p>
 <p align="center"><img src="docs/voice-rack.png" width="820" alt="The Robot voice rack"></p>
 
-**Happening now.** A call between two people in the circle, with a way in
-from the People list, the status bar and the tray.
+**Happening now.** A call between two people in the circle, with small live
+pictures of them and a way in from the People list, the status bar and the
+tray.
 
 <p align="center"><img src="docs/calls.png" width="820" alt="A call in the circle, ready to join"></p>
 
