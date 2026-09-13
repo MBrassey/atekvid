@@ -30,8 +30,8 @@ curl -fsSL https://raw.githubusercontent.com/MBrassey/atekvid/main/install.sh | 
 One line on Arch, Manjaro, CachyOS, Linux Mint, Ubuntu, Debian, Fedora,
 openSUSE, Void and Alpine (x86_64). The script:
 
-1. installs the two small system libraries the app needs (`libpulse`,
-   `libopus`; present on every desktop already);
+1. installs the small system libraries the app needs (`libpulse`,
+   `libasound`, `libopus`; present on every desktop already);
 2. downloads the latest release, **verifies its Ed25519 signature** against
    the atekvid release key and its SHA-256 checksum;
 3. installs `atekvid` to `~/.local/bin`, adds it to the application menu with
@@ -57,7 +57,7 @@ by hand.
 | | |
 |---|---|
 | CPU / OS | x86_64 Linux, glibc 2.35 or newer (Mint 21+, Ubuntu 22.04+, Debian 12+, Fedora 36+, Arch and derivatives) |
-| Sound | PipeWire (`pipewire-pulse`) or PulseAudio |
+| Sound | PipeWire or PulseAudio, or plain ALSA with no sound server running |
 | Camera | any V4L2 camera (MJPEG, YUYV, UYVY, NV12, NV21, YU12, YV12, grey, RGB); optional, a test pattern stands in |
 | Display | X11 or Wayland; OpenGL 3.x |
 | Screen sharing | Wayland: the desktop's ScreenCast portal (`xdg-desktop-portal` with the KDE, GNOME, wlr or Hyprland backend) and PipeWire. X11: nothing extra |
@@ -186,11 +186,21 @@ by hand.
   window, and the tray menu answers, declines, calls, invites and quits. While
   hidden with no call, the camera and microphone are released, so other
   programs can use the webcam.
-- **Devices.** Camera, resolution and frame rate, microphone with meter, gain
-  and noise gate, speaker with test tone, one-click echo cancellation using
-  the sound server's WebRTC canceller, and a quality selector. Plug a webcam
-  or a headset in while the app runs and it is picked up within a second; the
-  device you chose is used again whenever it comes back.
+- **Devices.** Camera, resolution and frame rate, microphone with meter,
+  automatic level, gain and noise gate, speaker with test tone, one-click
+  echo cancellation using the sound server's WebRTC canceller, and a quality
+  selector. Plug a webcam or a headset in while the app runs and it is picked
+  up within a second; the device you chose is used again whenever it comes
+  back.
+- **Sound that keeps working.** atekvid talks to PipeWire or PulseAudio,
+  and straight to the sound card through ALSA on a system with no sound
+  server at all. A microphone or speaker that drops out (the sound server
+  restarting, a headset unplugged) comes back by itself within seconds, on
+  the default device if the chosen one is gone. The automatic level keeps a
+  quiet laptop microphone as easy to hear as a headset. A microphone or
+  speaker muted or turned all the way down in the system's mixer, or a
+  microphone that sends no sound at all, is shown on the Devices screen and
+  during a call, with a button that unmutes it.
 - **Temporal monitoring.** The Health page reads link steadiness the way
   A-TEK reads a planet: as rift activity on the Planetary Rift Activity Index,
   from Pluto's 0.5% up.
@@ -422,7 +432,7 @@ the call continues for the rest.
 ```
 camera (V4L2) → JPEG/YUV decode → effects (face tracking, sprites, warps, map)
    → OpenH264 encode (adaptive ladder 180p…1080p) → seal → QUIC streams
-microphone (Pulse/PipeWire) → gain, noise gate → Opus (32 kb/s, FEC) → seal → datagrams
+microphone (PipeWire/PulseAudio, or ALSA) → automatic level, gain, noise gate → Opus (32 kb/s, FEC) → seal → datagrams
 shared screen (portal + PipeWire helper, or X11 GetImage) → scale to ≤1600 px
    → OpenH264 encode (10 fps, own bit budget) → seal → QUIC streams
 network → open → per-participant OpenH264 decoders (camera and screen) → tiles
@@ -526,6 +536,7 @@ atekvid is written in Rust. The main building blocks:
 | Camera capture | `v4l` | 0.14.0 |
 | JPEG decoding | `zune-jpeg` | 0.4.21 |
 | Sound server | `libpulse-binding`, `libpulse-simple-binding` | 2.30.1 |
+| Sound without a server | `alsa` | 0.12.1 |
 | Face detection | `rustface` (SeetaFace model) | 0.1.7 |
 | Sprites, overlays, text | `tiny-skia`, `ab_glyph`, `image` | 0.12.0, 0.2.32, 0.25.10 |
 | Key exchange and encryption | `x25519-dalek`, `hkdf`, `sha2`, `chacha20poly1305` | 3.0.0, 0.13.0, 0.11.0, 0.11.0 |
@@ -539,7 +550,7 @@ atekvid is written in Rust. The main building blocks:
 | Command line | `clap` | 4.6 |
 
 Runtime dependencies of the binary are the C libraries `libpulse`,
-`libpulse-simple` and `libopus` (with what they pull in: `libsndfile`,
+`libpulse-simple`, `libasound` and `libopus` (with what they pull in: `libsndfile`,
 `libdbus`, `libxcb`); everything else, including the H.264 codec and TLS, is
 compiled in. The `atekvid-screencast` helper additionally needs
 `libpipewire-0.3`. The archive is about 20 MB.
@@ -559,6 +570,7 @@ atekvid camera-test           save one frame from the camera
 atekvid identity              show this device's key and which account it is linked to
 atekvid register-key          register the key on GitHub via gh
 atekvid doctor                environment and connectivity check
+atekvid doctor --mic          … and listen to the microphone for a second
 atekvid effects               list effects and their parameters
 atekvid effects-preview --image me.jpg --out out.png --effects sunglasses,sepia
 atekvid where                 print what the map overlay would show
@@ -627,9 +639,14 @@ the example shipped in every release shows the format.
   every five minutes; the Refresh button on People forces it.
 - **"connecting to relay" stays.** Outbound UDP or HTTPS is blocked. atekvid
   needs UDP for direct connections and HTTPS (443) to the relay as a fallback.
-- **No sound / no microphone.** Run `atekvid devices`; on PipeWire make sure
-  `pipewire-pulse` is running. The Devices screen lists what the sound server
-  offers, including the default the server picks.
+- **No sound / no microphone.** Run `atekvid doctor --mic`: it says whether
+  the microphone or the speaker is muted or turned down in the system's
+  mixer, whether sound only goes to a dummy output, and whether the
+  microphone sends anything at all. The Devices screen and the call show the
+  same and offer *Unmute*. With no sound server running, atekvid uses ALSA
+  directly (the Devices screen says so); a microphone that is silent there
+  may have its capture switched off in `alsamixer` (F4 shows capture).
+  `atekvid devices` lists everything the app can use.
 - **Camera busy.** Another program holds the device; close it or pick the test
   pattern.
 - **The camera takes a moment, or shows nothing.** Some cameras (the Logitech
