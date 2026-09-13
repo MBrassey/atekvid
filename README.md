@@ -72,7 +72,9 @@ by hand.
 - **Group calls.** Call one person, then add the others from *Add people*.
   Every participant holds a direct encrypted media session with every other
   participant, everyone sees and hears everyone, and every connection has its
-  own safety code.
+  own safety code. Calls of three and four people keep up: with two or more
+  others, Auto holds the picture at 480p, and the voices are mixed under a
+  soft limiter.
 - **Screen sharing.** Share a screen or a single window with everyone in the
   call; several people can share at once. On Wayland the desktop's own picker
   chooses what is shared (through the ScreenCast portal and PipeWire); on X11
