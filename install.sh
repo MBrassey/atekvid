@@ -264,12 +264,12 @@ apt_names() {
 # OpenGL for the app, PipeWire for the screen-share helper (Wayland).
 runtime_libs() {
   case "$PM" in
-    pacman) echo "libpulse-simple.so.0:libpulse libopus.so.0:opus libxkbcommon.so.0:libxkbcommon libGL.so.1:mesa libpipewire-0.3.so.0:libpipewire" ;;
-    apt-get) echo "libpulse-simple.so.0:libpulse0 libopus.so.0:libopus0 libxkbcommon.so.0:libxkbcommon0 libGL.so.1:libgl1 libpipewire-0.3.so.0:libpipewire-0.3-0" ;;
-    dnf) echo "libpulse-simple.so.0:pulseaudio-libs libopus.so.0:opus libxkbcommon.so.0:libxkbcommon libGL.so.1:mesa-libGL libpipewire-0.3.so.0:pipewire-libs" ;;
-    zypper) echo "libpulse-simple.so.0:libpulse0 libopus.so.0:libopus0 libxkbcommon.so.0:libxkbcommon0 libGL.so.1:Mesa-libGL1 libpipewire-0.3.so.0:libpipewire-0_3-0" ;;
-    apk) echo "libpulse-simple.so.0:pulseaudio-libs libopus.so.0:opus libxkbcommon.so.0:libxkbcommon libGL.so.1:mesa-gl libpipewire-0.3.so.0:pipewire-libs" ;;
-    xbps-install) echo "libpulse-simple.so.0:pulseaudio libopus.so.0:opus libxkbcommon.so.0:libxkbcommon libGL.so.1:MesaLib libpipewire-0.3.so.0:pipewire" ;;
+    pacman) echo "libasound.so.2:alsa-lib libpulse-simple.so.0:libpulse libopus.so.0:opus libxkbcommon.so.0:libxkbcommon libGL.so.1:mesa libpipewire-0.3.so.0:libpipewire" ;;
+    apt-get) echo "libasound.so.2:libasound2 libpulse-simple.so.0:libpulse0 libopus.so.0:libopus0 libxkbcommon.so.0:libxkbcommon0 libGL.so.1:libgl1 libpipewire-0.3.so.0:libpipewire-0.3-0" ;;
+    dnf) echo "libasound.so.2:alsa-lib libpulse-simple.so.0:pulseaudio-libs libopus.so.0:opus libxkbcommon.so.0:libxkbcommon libGL.so.1:mesa-libGL libpipewire-0.3.so.0:pipewire-libs" ;;
+    zypper) echo "libasound.so.2:libasound2 libpulse-simple.so.0:libpulse0 libopus.so.0:libopus0 libxkbcommon.so.0:libxkbcommon0 libGL.so.1:Mesa-libGL1 libpipewire-0.3.so.0:libpipewire-0_3-0" ;;
+    apk) echo "libasound.so.2:alsa-lib libpulse-simple.so.0:pulseaudio-libs libopus.so.0:opus libxkbcommon.so.0:libxkbcommon libGL.so.1:mesa-gl libpipewire-0.3.so.0:pipewire-libs" ;;
+    xbps-install) echo "libasound.so.2:alsa-lib libpulse-simple.so.0:pulseaudio libopus.so.0:opus libxkbcommon.so.0:libxkbcommon libGL.so.1:MesaLib libpipewire-0.3.so.0:pipewire" ;;
   esac
 }
 
