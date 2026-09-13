@@ -75,6 +75,14 @@ by hand.
   own safety code. Calls of three and four people keep up: with two or more
   others, Auto holds the picture at 480p, and the voices are mixed under a
   soft limiter.
+- **Calls you can see, and walk into.** When people in your circle are on a
+  call, you know: the status bar says who, the People list shows it under
+  *Happening now* and says who each person is with, and the tray menu lists
+  it. *Join* walks you straight in, no invitation needed. Anyone on the call
+  can make it private from the call's header; a private call still shows who
+  is in it, but nobody can walk in. People who arrive at the same moment
+  find each other on their own, so a call of four always ends up with
+  everyone connected to everyone.
 - **Screen sharing.** Share a screen or a single window with everyone in the
   call; several people can share at once. On Wayland the desktop's own picker
   chooses what is shared (through the ScreenCast portal and PipeWire); on X11
@@ -285,6 +293,11 @@ and Voice out put your voice through a rack, here the Robot voice.
 
 <p align="center"><img src="docs/voice-call.png" width="820" alt="The voice changer on a call"></p>
 <p align="center"><img src="docs/voice-rack.png" width="820" alt="The Robot voice rack"></p>
+
+**Happening now.** A call between two people in the circle, with a way in
+from the People list, the status bar and the tray.
+
+<p align="center"><img src="docs/calls.png" width="820" alt="A call in the circle, ready to join"></p>
 
 **Your own picture, as big as you like.** Drag it to any corner and pull its
 grip to resize it, to see your effects up close.
@@ -577,6 +590,7 @@ thepearlking = "dubstep"           # someone's own ringtone
 
 [ui]
 tray = true                        # keep running in the tray when the window closes
+open_calls = true                  # let the circle see your calls and walk in
 notifications = true
 show_stats = false
 
