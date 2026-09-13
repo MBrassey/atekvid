@@ -20,12 +20,19 @@ RELEASE_NAMESPACE="atekvid-release"
 REPO="MBrassey/atekvid.io"
 APP="atekvid"
 PREFIX="${ATEKVID_PREFIX:-$HOME/.local}"
-DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/atekvid"
+DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+DATA_DIR="$DATA_HOME/atekvid"
 SRC_DIR="$DATA_DIR/src"
+APPS_DIR="$DATA_HOME/applications"
+ICON_DIR="$DATA_HOME/icons/hicolor/256x256/apps"
+AUTOSTART_FILE="$CONFIG_HOME/autostart/$APP.desktop"
 MODE="auto"          # auto | prebuilt | source
 ASSUME_YES=0
 NO_DESKTOP=0
 NO_AUTOSTART=0
+ADD_AUTOSTART=0
+WAS_INSTALLED=0
 NO_PIN=0
 NO_PACKAGES=0
 REGISTER_KEY=0
@@ -44,7 +51,8 @@ Options:
   --prefix DIR      install under DIR/bin (default: ~/.local)
   --no-desktop      skip the application-menu entry
   --no-pin          do not pin atekvid to the panel (taskbar or dock)
-  --no-autostart    do not start atekvid in the tray at login
+  --no-autostart    do not start atekvid in the tray at login (removes the entry)
+  --autostart       start atekvid in the tray at login again
   --no-packages     do not install system packages (they are already present)
   --register-key    register this device's key on GitHub without asking
   --update          update an existing installation
@@ -62,7 +70,8 @@ while [ $# -gt 0 ]; do
     --prefix=*) PREFIX="${1#*=}" ;;
     --no-desktop) NO_DESKTOP=1 ;;
     --no-pin) NO_PIN=1 ;;
-    --no-autostart) NO_AUTOSTART=1 ;;
+    --no-autostart) NO_AUTOSTART=1; ADD_AUTOSTART=0 ;;
+    --autostart) ADD_AUTOSTART=1; NO_AUTOSTART=0 ;;
     --no-packages) NO_PACKAGES=1 ;;
     --register-key) REGISTER_KEY=1 ;;
     --update) DO_UPDATE=1 ;;
@@ -112,12 +121,17 @@ has_tty() { { : < /dev/tty; } 2>/dev/null; }
 json_list() {
   have python3 || return 1
   python3 - "$@" <<'PY'
-import json, os, sys
+import json, os, shutil, sys, tempfile
 path, op, entry, keys = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4:]
+# A settings file linked in from elsewhere (dotfiles) is edited where it
+# lives, so the link stays a link; where that cannot be written it is skipped.
+path = os.path.realpath(path)
 try:
     with open(path) as f:
         data = json.load(f)
 except Exception:
+    sys.exit(1)
+if not isinstance(data, dict):
     sys.exit(1)
 for key in keys:
     node = data.get(key)
@@ -127,10 +141,20 @@ for key in keys:
     if (op == "add") == (entry in items):
         sys.exit(0)
     node["value"] = items + [entry] if op == "add" else [x for x in items if x != entry]
-    tmp = path + ".atekvid-tmp"
-    with open(tmp, "w") as f:
-        json.dump(data, f, indent=4)
-    os.replace(tmp, path)
+    tmp = None
+    try:
+        fd, tmp = tempfile.mkstemp(prefix=".atekvid-", dir=os.path.dirname(path))
+        with os.fdopen(fd, "w") as f:
+            json.dump(data, f, indent=4)
+        shutil.copymode(path, tmp)
+        os.replace(tmp, path)
+    except Exception:
+        if tmp:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+        sys.exit(1)
     sys.exit(0)
 sys.exit(1)
 PY
@@ -159,8 +183,8 @@ gsettings_list() {
 # "pin_to_panel remove" takes it off again.
 pin_to_panel() {
   local op="${1:-add}" entry="$APP.desktop" pinned=0 f js
-  for f in "${XDG_CONFIG_HOME:-$HOME/.config}"/cinnamon/spices/grouped-window-list@cinnamon.org/*.json \
-           "${XDG_CONFIG_HOME:-$HOME/.config}"/cinnamon/spices/panel-launchers@cinnamon.org/*.json \
+  for f in "$CONFIG_HOME"/cinnamon/spices/grouped-window-list@cinnamon.org/*.json \
+           "$CONFIG_HOME"/cinnamon/spices/panel-launchers@cinnamon.org/*.json \
            "$HOME"/.cinnamon/configs/grouped-window-list@cinnamon.org/*.json \
            "$HOME"/.cinnamon/configs/panel-launchers@cinnamon.org/*.json; do
     [ -f "$f" ] || continue
@@ -211,9 +235,13 @@ for candidate in pacman apt-get dnf zypper apk xbps-install; do
 done
 
 pkg_install() {
+  local names
   case "$PM" in
     pacman) as_root pacman -S --needed --noconfirm "$@" ;;
-    apt-get) as_root apt-get update -qq && as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "$@" ;;
+    apt-get)
+      as_root apt-get update -qq || return 1
+      mapfile -t names < <(apt_names "$@")
+      as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "${names[@]}" ;;
     dnf) as_root dnf install -y "$@" ;;
     zypper) as_root zypper --non-interactive install "$@" ;;
     apk) as_root apk add "$@" ;;
@@ -222,15 +250,26 @@ pkg_install() {
   esac
 }
 
-# The PipeWire library is only used by the screen-share helper (Wayland).
-runtime_pkgs() {
+# Ubuntu 24.04 and Debian 13 renamed many libraries for 64-bit time
+# (libfoo0 became libfoo0t64); ask apt for the new name first.
+apt_names() {
+  local p
+  for p in "$@"; do
+    if apt-cache show "${p}t64" >/dev/null 2>&1; then printf '%s\n' "${p}t64"; else printf '%s\n' "$p"; fi
+  done
+}
+
+# The libraries needed at run time, each as the file the dynamic loader looks
+# for and the package that has it here: PulseAudio, Opus, keyboard maps and
+# OpenGL for the app, PipeWire for the screen-share helper (Wayland).
+runtime_libs() {
   case "$PM" in
-    pacman) echo "libpulse opus libxkbcommon mesa libpipewire" ;;
-    apt-get) echo "libpulse0 libopus0 libxkbcommon0 libgl1 libpipewire-0.3-0" ;;
-    dnf) echo "pulseaudio-libs opus libxkbcommon mesa-libGL pipewire-libs" ;;
-    zypper) echo "libpulse0 libopus0 libxkbcommon0 Mesa-libGL1 libpipewire-0_3-0" ;;
-    apk) echo "pulseaudio-libs opus libxkbcommon mesa-gl pipewire-libs" ;;
-    xbps-install) echo "pulseaudio opus libxkbcommon MesaLib pipewire" ;;
+    pacman) echo "libpulse-simple.so.0:libpulse libopus.so.0:opus libxkbcommon.so.0:libxkbcommon libGL.so.1:mesa libpipewire-0.3.so.0:libpipewire" ;;
+    apt-get) echo "libpulse-simple.so.0:libpulse0 libopus.so.0:libopus0 libxkbcommon.so.0:libxkbcommon0 libGL.so.1:libgl1 libpipewire-0.3.so.0:libpipewire-0.3-0" ;;
+    dnf) echo "libpulse-simple.so.0:pulseaudio-libs libopus.so.0:opus libxkbcommon.so.0:libxkbcommon libGL.so.1:mesa-libGL libpipewire-0.3.so.0:pipewire-libs" ;;
+    zypper) echo "libpulse-simple.so.0:libpulse0 libopus.so.0:libopus0 libxkbcommon.so.0:libxkbcommon0 libGL.so.1:Mesa-libGL1 libpipewire-0.3.so.0:libpipewire-0_3-0" ;;
+    apk) echo "libpulse-simple.so.0:pulseaudio-libs libopus.so.0:opus libxkbcommon.so.0:libxkbcommon libGL.so.1:mesa-gl libpipewire-0.3.so.0:pipewire-libs" ;;
+    xbps-install) echo "libpulse-simple.so.0:pulseaudio libopus.so.0:opus libxkbcommon.so.0:libxkbcommon libGL.so.1:MesaLib libpipewire-0.3.so.0:pipewire" ;;
   esac
 }
 
@@ -260,18 +299,21 @@ if [ "$DO_UNINSTALL" = 1 ]; then
   if [ -e "$PREFIX/bin/$APP" ]; then rm -f "$PREFIX/bin/$APP" "$PREFIX/bin/$APP-screencast" && ok "removed $PREFIX/bin/$APP"; else warn "$PREFIX/bin/$APP was not installed"; fi
   pin_to_panel remove
   rm -f "$DATA_DIR/panel-pinned"
-  rm -f "$HOME/.local/share/applications/$APP.desktop" "$HOME/.local/share/icons/hicolor/256x256/apps/$APP.png" "$HOME/.config/autostart/$APP.desktop"
-  rm -f "$DATA_DIR/install.sh" "$HOME/.config/fish/conf.d/atekvid.fish"
+  rm -f "$APPS_DIR/$APP.desktop" "$ICON_DIR/$APP.png" "$AUTOSTART_FILE"
+  rm -f "$DATA_DIR/install.sh" "$DATA_DIR/autostart-offered" "$CONFIG_HOME/fish/conf.d/atekvid.fish"
   rmdir "$DATA_DIR" 2>/dev/null || true
   for rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
     if [ -f "$rc" ] && grep -qF '# atekvid' "$rc"; then
-      sed -i '/^# atekvid$/{N;/\/bin:/d}' "$rc" 2>/dev/null || true
+      # Written back through a link (dotfiles), so the link stays.
+      rc_tmp="$(mktemp)" || continue
+      if sed '/^# atekvid$/{N;/\/bin:/d}' "$rc" > "$rc_tmp"; then cat "$rc_tmp" > "$rc" || true; fi
+      rm -f "$rc_tmp"
     fi
   done
-  have update-desktop-database && update-desktop-database "$HOME/.local/share/applications" 2>/dev/null || true
+  have update-desktop-database && update-desktop-database "$APPS_DIR" 2>/dev/null || true
   if [ -d "$SRC_DIR" ] && confirm "Delete the downloaded source in $SRC_DIR?" n; then rm -rf "$SRC_DIR"; fi
   if [ -d "$HOME/.cache/atekvid" ] && confirm "Delete the cache in ~/.cache/atekvid (map tiles, avatars, log)?" n; then rm -rf "$HOME/.cache/atekvid"; fi
-  warn "Your identity key and settings in ~/.config/atekvid were kept (delete them by hand to unlink this device)."
+  warn "Your identity key and settings in ${CONFIG_HOME/#$HOME/\~}/atekvid were kept (delete them by hand to unlink this device)."
   exit 0
 fi
 
@@ -347,7 +389,8 @@ ensure_rust() {
 pkg_installed() {
   case "$PM" in
     pacman) pacman -Qq "$1" >/dev/null 2>&1 ;;
-    apt-get) dpkg-query -W -f '${Status}' "$1" 2>/dev/null | grep -q "install ok installed" ;;
+    apt-get) dpkg-query -W -f '${Status}' "$1" 2>/dev/null | grep -q "install ok installed" \
+               || dpkg-query -W -f '${Status}' "${1}t64" 2>/dev/null | grep -q "install ok installed" ;;
     dnf|zypper) rpm -q "$1" >/dev/null 2>&1 ;;
     apk) apk info -e "$1" >/dev/null 2>&1 ;;
     xbps-install) xbps-query "$1" >/dev/null 2>&1 ;;
@@ -374,6 +417,28 @@ ensure_packages() {
   fi
   # shellcheck disable=SC2086
   pkg_install $missing || die "package installation failed"
+}
+
+# Install the runtime libraries that are missing. The loader's cache is asked
+# by file name, so a renamed package or a library from elsewhere counts too;
+# where it cannot be listed (musl) the package names are checked instead.
+ensure_runtime() {
+  local cache="" ldc pair so arch missing=""
+  [ "$NO_PACKAGES" = 1 ] && return
+  for ldc in ldconfig /sbin/ldconfig /usr/sbin/ldconfig; do
+    if have "$ldc"; then cache="$("$ldc" -p 2>/dev/null || true)"; break; fi
+  done
+  if ! grep -q '=>' <<<"$cache"; then
+    ensure_packages "$(for pair in $(runtime_libs); do printf '%s ' "${pair#*:}"; done)"
+    return
+  fi
+  case "$(uname -m)" in x86_64) arch="x86-64" ;; aarch64) arch="AArch64" ;; *) arch="" ;; esac
+  for pair in $(runtime_libs); do
+    so="${pair%%:*}"
+    grep -qE "^[[:space:]]*${so//./\\.} \\([^)]*${arch}" <<<"$cache" || missing="$missing ${pair#*:}"
+  done
+  if [ -z "$missing" ]; then ok "Runtime libraries present"; return; fi
+  ensure_packages "${missing# }"
 }
 
 # ---------------------------------------------------------------------------
@@ -420,7 +485,7 @@ save_self() {
 
 install_desktop_entry() {
   [ "$NO_DESKTOP" = 1 ] && return
-  local apps="$HOME/.local/share/applications" icons="$HOME/.local/share/icons/hicolor/256x256/apps"
+  local apps="$APPS_DIR" icons="$ICON_DIR"
   mkdir -p "$apps" "$icons"
   "$PREFIX/bin/$APP" export-icon "$icons/$APP.png" >/dev/null 2>&1 || true
   cat > "$apps/$APP.desktop" <<DESKTOP
@@ -437,17 +502,39 @@ Keywords=video;call;chat;family;
 StartupWMClass=atekvid
 DESKTOP
   have update-desktop-database && update-desktop-database "$apps" 2>/dev/null || true
-  have gtk-update-icon-cache && gtk-update-icon-cache -q -t "$HOME/.local/share/icons/hicolor" 2>/dev/null || true
+  have gtk-update-icon-cache && gtk-update-icon-cache -q -t "$DATA_HOME/icons/hicolor" 2>/dev/null || true
   ok "Added atekvid to the application menu"
 }
 
-# Start in the system tray at login so calls can arrive while the window is closed.
+# Start in the system tray at login so calls can arrive while the window is
+# closed. The entry is made once: turned off in the desktop's startup
+# settings, or removed, it stays that way. --no-autostart removes it and
+# --autostart brings it back.
 install_autostart() {
-  [ "$NO_DESKTOP" = 1 ] && return
-  [ "$NO_AUTOSTART" = 1 ] && return
-  local dir="$HOME/.config/autostart"
-  mkdir -p "$dir"
-  cat > "$dir/$APP.desktop" <<DESKTOP
+  local f="$AUTOSTART_FILE" mark="$DATA_DIR/autostart-offered" prog
+  if [ "$NO_AUTOSTART" = 1 ]; then
+    if [ -e "$f" ] || [ -L "$f" ]; then rm -f "$f" && ok "atekvid will no longer start at login"; fi
+    { mkdir -p "$DATA_DIR" && printf 'removed with --no-autostart\n' > "$mark"; } 2>/dev/null || true
+    return 0
+  fi
+  [ "$NO_DESKTOP" = 1 ] && return 0
+  if [ "$ADD_AUTOSTART" = 0 ]; then
+    if [ -e "$f" ]; then
+      if grep -qE '^(Hidden=true|X-GNOME-Autostart-enabled=false)' "$f"; then
+        ok "Starting at login stays off, as set in your desktop's startup settings"
+        return 0
+      fi
+      # Left as it is, unless the program it starts has gone (a new --prefix).
+      prog="$(sed -n 's/^Exec=//p' "$f" | head -n1)"
+      case "$prog" in \"*) prog="${prog#\"}"; prog="${prog%%\"*}" ;; *) prog="${prog%% *}" ;; esac
+      if [ -x "$prog" ]; then return 0; fi
+    elif [ -e "$mark" ] || [ "$WAS_INSTALLED" = 1 ]; then
+      # Made before and taken away since.
+      return 0
+    fi
+  fi
+  mkdir -p "$(dirname "$f")" || { warn "cannot create $(dirname "$f")"; return 0; }
+  cat > "$f" <<DESKTOP
 [Desktop Entry]
 Type=Application
 Name=atekvid
@@ -459,13 +546,14 @@ X-GNOME-Autostart-enabled=true
 X-GNOME-Autostart-Delay=8
 StartupNotify=false
 DESKTOP
-  ok "atekvid will start in the tray at login (disable with --no-autostart or in the app)"
+  { mkdir -p "$DATA_DIR" && printf 'made by the installer\n' > "$mark"; } 2>/dev/null || true
+  ok "atekvid will start in the tray at login (re-run the installer with --no-autostart to stop that)"
 }
 
 ASSET="atekvid-x86_64-unknown-linux-gnu.tar.gz"
 
 try_prebuilt() {
-  local arch tmp base
+  local arch tmp base latest tag=""
   arch="$(uname -m)"
   [ "$arch" = "x86_64" ] || { warn "No prebuilt binary for $arch"; return 1; }
   if [ -n "$TARBALL_BIN" ]; then
@@ -476,7 +564,13 @@ try_prebuilt() {
   tmp="$(mktemp -d)"
   TMP_TO_CLEAN="$tmp"
   base="https://github.com/$RELEASES_REPO/releases/latest/download"
-  info "Downloading the latest release from github.com/$RELEASES_REPO"
+  # All three files from the one release, even if a newer one is published
+  # while they download.
+  latest="$(curl -fsSLI -o /dev/null -w '%{url_effective}' "https://github.com/$RELEASES_REPO/releases/latest" 2>/dev/null || true)"
+  case "$latest" in */releases/tag/v[0-9]*) tag="${latest##*/}" ;; esac
+  case "$tag" in *[!A-Za-z0-9._-]*) tag="" ;; esac
+  if [ -n "$tag" ]; then base="https://github.com/$RELEASES_REPO/releases/download/$tag"; fi
+  info "Downloading the latest release${tag:+ ($tag)} from github.com/$RELEASES_REPO"
   if ! curl -fsSL --retry 3 -o "$tmp/$ASSET" "$base/$ASSET" || ! curl -fsSL --retry 3 -o "$tmp/$ASSET.sha256" "$base/$ASSET.sha256" \
      || ! curl -fsSL --retry 3 -o "$tmp/$ASSET.sig" "$base/$ASSET.sig"; then
     warn "No released build could be downloaded"; rm -rf "$tmp"; return 1
@@ -506,7 +600,20 @@ try_prebuilt() {
   return 0
 }
 
+# Whether a source build could get the source: a checkout is at hand, or the
+# GitHub CLI is signed in to an account that can read the private repository.
+source_reachable() {
+  [ -n "$CHECKOUT" ] && return 0
+  have gh && gh auth status >/dev/null 2>&1 && gh api "repos/$REPO" --silent >/dev/null 2>&1
+}
+
 build_from_source() {
+  # Access first, so nothing gets installed for a build that cannot happen.
+  if [ -z "$CHECKOUT" ]; then
+    ensure_gh
+    gh api "repos/$REPO" --silent >/dev/null 2>&1 \
+      || die "this GitHub account cannot read $REPO; building from source needs access to the private repository"
+  fi
   ensure_packages "$(build_pkgs)"
   ensure_rust
   [ -n "$CHECKOUT" ] || clone_or_update_source
@@ -526,19 +633,26 @@ main() {
 info "atekvid installer"
 [ "$(uname -s)" = Linux ] || die "this installer is for Linux"
 [ -n "$PM" ] && ok "Package manager: $PM" || warn "No known package manager found"
+if [ -x "$PREFIX/bin/$APP" ]; then WAS_INSTALLED=1; fi
 
 if [ "$DO_UPDATE" = 1 ]; then
   if [ "$MODE" != prebuilt ] && [ -d "$SRC_DIR/.git" ]; then clone_or_update_source; fi
 fi
 
-ensure_packages "$(runtime_pkgs)"
+ensure_runtime
 
 installed=0
 if [ "$MODE" != source ]; then
   if try_prebuilt; then installed=1; elif [ "$MODE" = prebuilt ]; then die "no usable prebuilt binary"; fi
 fi
 if [ "$installed" = 0 ]; then
-  if [ "$MODE" = auto ]; then info "Falling back to a source build (needs access to the private repository)"; fi
+  # A source build takes build tools, Rust and access to the private
+  # repository, so it only happens with that access, and when you agree.
+  if [ "$MODE" = auto ]; then
+    source_reachable || die "No released build could be installed (see above), and building from source needs a GitHub account that can read $REPO: sign in with 'gh auth login', then re-run with --source."
+    confirm "No released build could be installed. Build atekvid from source instead (installs build tools and Rust, a few minutes)?" \
+      || die "Nothing was installed. Re-run the installer to try the release again, or with --source to build it."
+  fi
   build_from_source
 fi
 install_desktop_entry
@@ -559,8 +673,8 @@ case ":$PATH:" in
           printf '\n# atekvid\n%s\n' "$line" >> "$rc"; ok "updated $rc (open a new terminal)"
         fi
       done
-      if [ -d "$HOME/.config/fish" ] && confirm "Add it for fish too?"; then
-        mkdir -p "$HOME/.config/fish/conf.d"; printf "fish_add_path -g '%s/bin'\n" "$PREFIX" > "$HOME/.config/fish/conf.d/atekvid.fish"; ok "updated fish"
+      if [ -d "$CONFIG_HOME/fish" ] && confirm "Add it for fish too?"; then
+        mkdir -p "$CONFIG_HOME/fish/conf.d"; printf "fish_add_path -g '%s/bin'\n" "$PREFIX" > "$CONFIG_HOME/fish/conf.d/atekvid.fish"; ok "updated fish"
       fi
     else
       warn "Add it yourself, e.g.:  export PATH=\"$PREFIX/bin:\$PATH\""
