@@ -114,7 +114,8 @@ by hand.
   hold, a sixteen-step sequencer, keys, looper, delay, reverb, wavefolder,
   chorus, mixer, scope, output) patched with cables between colour-coded
   sockets, with knobs to turn, ten starting racks to begin from (four of them voices), a spectrum
-  analyser and an oscilloscope along the bottom, and racks kept by name.
+  analyser and an oscilloscope along the bottom, and up to ten racks of your
+  own kept by name.
   The rack zooms in and out (Ctrl and the wheel, a pinch, or the buttons in
   its corner) and fits every module on screen with a double-click.
   *Only me* plays it on your speakers; *Everyone* mixes it into what the call
@@ -124,9 +125,14 @@ by hand.
 - **Voice changer.** Nine voices (natural, robot, deep, chipmunk, alien,
   monster, hall, echo, radio) applied to your microphone before it is sent,
   so everyone on the call hears the changed voice, with no delay added.
-  It is on the call bar (the wave button) and in the Effects panel, with a
-  hear-yourself switch for trying a voice on headphones. The mute button
-  wears a small mark while your voice is changed.
+  It is on the call bar (the wave button) and in the Effects panel. *Hear my
+  changed voice* lets you hear yourself the way the call does (use
+  headphones), or leave it off and sound normal to yourself while everyone
+  else hears the change. The choice is remembered, and the Lab has the same
+  switch while a rack is changing your voice, so a voice rack such as
+  Cathedral (Voice in through a hall reverb) works as a voice changer on its
+  own, in a call or not. The mute button wears a small mark while your voice
+  is changed.
 - **Ringtones.** Twelve tunes made by atekvid itself: bells, an old phone,
   the opening of Mozart's *Eine kleine Nachtmusik*, hip hop, trap, drum and
   bass, techno, EDM, dubstep, synthwave, chiptune and an alien theremin.
