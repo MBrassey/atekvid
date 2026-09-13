@@ -149,7 +149,11 @@ by hand.
   city, nearest cross streets, the hotel, museum or airport you are in, a
   scale bar and a north arrow, tucked into a corner. Your own PNG overlays
   load as plugins. Text and the map are drawn over your mirrored self-preview
-  the right way round, so you read exactly what everyone else sees.
+  the right way round, so you read exactly what everyone else sees. In a
+  call, drag your own picture to any corner and make it bigger or smaller
+  from its corner grip (double-click it, or press **P**, to step through
+  sizes), so you can watch your effects up close; size and corner are
+  remembered.
 - **Chat**, end-to-end encrypted per session, with Markdown, links, a custom
   emoji set drawn in the app's palette, typing indicator and delivery ticks.
   In a group call the chat drawer reaches everyone in the call.
@@ -179,7 +183,7 @@ by hand.
 
 Keyboard in a call: **M** mute · **V** camera · **X** share screen ·
 **A** art board · **E** effects · **C** chat · **D** drop box · **I** add
-people · **S** snapshot · **R** record · **F** fullscreen · **Esc** leave
+people · **S** snapshot · **R** record · **P** the size of your own picture · **F** fullscreen · **Esc** leave
 fullscreen · **Ctrl+Q** quit. On the art board: **B** draw · **V** select ·
 **S** shapes · **T** text · **K** stickers · **H** pan · **E** eraser ·
 **Ctrl+Z / Ctrl+Y** undo and redo · **Ctrl+D** duplicate · **Del** delete ·
@@ -279,6 +283,11 @@ and Voice out put your voice through a rack, here the Robot voice.
 
 <p align="center"><img src="docs/voice-call.png" width="820" alt="The voice changer on a call"></p>
 <p align="center"><img src="docs/voice-rack.png" width="820" alt="The Robot voice rack"></p>
+
+**Your own picture, as big as you like.** Drag it to any corner and pull its
+grip to resize it, to see your effects up close.
+
+<p align="center"><img src="docs/self-view.png" width="820" alt="A bigger self view in a call"></p>
 
 **Drop box in a call.** A file offered by a participant, ready to download.
 
