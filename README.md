@@ -97,10 +97,24 @@ by hand.
   apart, are offered
   to everyone who comes online, and export to PNG. In a call the board takes
   the stage with the cameras beside it; strokes appear on the others' screens
-  as they are drawn, with everyone's cursor and name.
+  as they are drawn, with everyone's cursor and name. The gallery shows who
+  is looking at each board and what is new since you last looked, and marks
+  others added while you were away are outlined for a moment when you return.
+  Chat has a *Draw together* button that opens a board beside the
+  conversation, and a video call button.
 - **Presence that is true.** *Online* means the other person's atekvid is
   open. Clients connect to each other the moment they start and drop off the
-  list within seconds of closing.
+  list within seconds of closing. The list also says who is on which art
+  board, trial or Lab program, with a link to join them.
+- **The Lab.** A modular synthesiser and three hacker games. The synth is a
+  rack of modules (oscillator, LFO, envelope, filter, amp, noise, sample and
+  hold, a sixteen-step sequencer, keys, looper, delay, reverb, wavefolder,
+  chorus, mixer, scope, output) patched with cables between colour-coded
+  sockets, with knobs to turn, six starting racks to begin from, a spectrum
+  analyser and an oscilloscope along the bottom, and racks kept by name.
+  *Only me* plays it on your speakers; *Everyone* mixes it into what the call
+  hears. The hacker games are a field terminal: Keycrack, Cipher and Packet
+  run, each with a best score.
 - **Effects** baked into your picture, so everyone sees them: face-tracked
   props (sunglasses, hats, crown, cat and bunny ears, mustache, googly eyes…),
   funhouse warps, looks (old film, thermal, night vision, cartoon…), particles
@@ -135,7 +149,7 @@ by hand.
   controls, a hand-drawn icon set, and quiet sounds for rings, messages, files
   and reactions.
 - **Something hidden.** A small probe keeps watch beside the version number.
-  It goes somewhere.
+  It goes somewhere, and it is better with company.
 
 Keyboard in a call: **M** mute · **V** camera · **X** share screen ·
 **A** art board · **E** effects · **C** chat · **D** drop box · **I** add
@@ -144,7 +158,9 @@ fullscreen · **Ctrl+Q** quit. On the art board: **B** draw · **V** select ·
 **S** shapes · **T** text · **K** stickers · **H** pan · **E** eraser ·
 **Ctrl+Z / Ctrl+Y** undo and redo · **Ctrl+D** duplicate · **Del** delete ·
 **+ − 0** zoom and fit · **Space** or the middle button drags the view ·
-**Ctrl+wheel** zooms.
+**Ctrl+wheel** zooms. In the Lab, with the synth on: **A** to **;** play
+notes, **Z** and **X** change octave; in the terminal, digits, arrows,
+**Enter** and **Esc** do what they say.
 
 ## Screens
 
@@ -203,6 +219,31 @@ the side; a slim tool strip stays over the board.
 
 <p align="center"><img src="docs/art-call.png" width="820" alt="The art board in a call"></p>
 
+**Who is where.** The People list says who is on which board, trial or Lab
+program, with a link to join them.
+
+<p align="center"><img src="docs/presence-people.png" width="820" alt="The People list showing where everyone is"></p>
+
+**The Lab.** The synth rack, with a sequencer driving an oscillator through
+a filter and an amp into a delay, and the screens along the bottom reading
+the sound.
+
+<p align="center"><img src="docs/lab-synth.png" width="820" alt="The modular synthesiser"></p>
+<p align="center"><img src="docs/lab-synth-drone.png" width="820" alt="An alien drone patch"></p>
+
+**The Lab on a call.** The rack takes the stage (the flask in the bar, or
+**L**), the cameras line the side, and with *Everyone* chosen the other
+people hear it, microphone muted or not.
+
+<p align="center"><img src="docs/lab-call.png" width="820" alt="The synth on a call"></p>
+
+**Hacker games.** The field terminal and its three programs.
+
+<p align="center"><img src="docs/lab-hacker.png" width="820" alt="The field terminal"></p>
+<p align="center"><img src="docs/lab-keycrack.png" width="820" alt="Keycrack"></p>
+<p align="center"><img src="docs/lab-cipher.png" width="820" alt="Cipher"></p>
+<p align="center"><img src="docs/lab-packet.png" width="820" alt="Packet run"></p>
+
 **Drop box in a call.** A file offered by a participant, ready to download.
 
 <p align="center"><img src="docs/call-dropbox.png" width="820" alt="Drop box drawer"></p>
@@ -225,10 +266,13 @@ the side; a slim tool strip stays over the board.
 The probe opens GeometryKing: a one-key rhythm runner through the planets in
 order of rift activity, with a tune composed for each by a small synthesiser,
 practice markers, an endless run, and The Core, a rotating icositetrachoron
-to turn over in four dimensions.
+to turn over in four dimensions. Trials run together: everyone on the same
+trial sees the others' probes as ghosts with a race board of how far each has
+got, and a call carries on in a strip at the side.
 
 <p align="center"><img src="docs/game-title.png" width="820" alt="GeometryKing"></p>
 <p align="center"><img src="docs/game-play.png" width="820" alt="A trial"></p>
+<p align="center"><img src="docs/presence-race.png" width="820" alt="A trial run together, on a call"></p>
 <p align="center"><img src="docs/game-core.png" width="820" alt="The Core"></p>
 </details>
 
