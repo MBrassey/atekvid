@@ -127,10 +127,14 @@ by hand.
   It is on the call bar (the wave button) and in the Effects panel, with a
   hear-yourself switch for trying a voice on headphones. The mute button
   wears a small mark while your voice is changed.
-- **A ring that says who it is.** Incoming calls ring with a bright bell
-  figure, and after every third ring a robot voice says who is calling. The
-  voice is made by atekvid itself, so nothing extra needs installing; the
-  Devices screen has a switch and a Hear it button.
+- **Ringtones.** Twelve tunes made by atekvid itself: bells, an old phone,
+  the opening of Mozart's *Eine kleine Nachtmusik*, hip hop, trap, drum and
+  bass, techno, EDM, dubstep, synthwave, chiptune and an alien theremin.
+  Give everyone the same one or each person their own, or add your own
+  music (MP3, M4A, FLAC, OGG or WAV) from the file chooser or by dropping it
+  on the Devices screen. A robot voice, made by atekvid too, says who is
+  calling: after every third ring of a short ringtone, or over a long one
+  while the music dips. Every choice has a listen button.
 - **Effects** baked into your picture, so everyone sees them: face-tracked
   props (sunglasses, hats, crown, cat and bunny ears, mustache, googly eyes…),
   funhouse warps, looks (old film, thermal, night vision, cartoon…), particles
@@ -277,6 +281,11 @@ and Voice out put your voice through a rack, here the Robot voice.
 **Chat in a call.** *Everyone* addresses the whole call; a name addresses one person.
 
 <p align="center"><img src="docs/call-chat.png" width="820" alt="Chat drawer"></p>
+
+**Ringtones.** A tune for everyone, one for each person, and sounds of your
+own, each with a listen button.
+
+<p align="center"><img src="docs/ringtones.png" width="820" alt="The Ringtones card"></p>
 
 **Chat, Drop box, Effects, Devices, Health.**
 
@@ -539,6 +548,15 @@ gate_threshold_db = -48.0
 echo_cancel = false                # loads the sound server's WebRTC canceller
 volume = 1.0
 ringtone = true
+announce = true                    # a robot voice says who is calling
+voice = "none"                     # voice changer: robot, deep, chipmunk, alien, monster, hall, echo, radio
+
+[ringtones]
+default = "bells"                  # bells, phone, classical, hiphop, trap, dnb, techno, edm, dubstep,
+                                   # synthwave, chiptune, alien, or "file:<name>" for a sound you added
+
+[ringtones.people]
+thepearlking = "dubstep"           # someone's own ringtone
 
 [ui]
 tray = true                        # keep running in the tray when the window closes
