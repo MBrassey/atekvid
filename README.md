@@ -163,8 +163,11 @@ by hand.
   calling: after every third ring of a short ringtone, or over a long one
   while the music dips. Every choice has a listen button.
 - **Effects** baked into your picture, so everyone sees them: face-tracked
-  props (sunglasses, hats, crown, cat and bunny ears, mustache, googly eyes…),
-  funhouse warps, looks (old film, thermal, night vision, cartoon…), particles
+  props (sunglasses, hats, crown, cat and bunny ears, mustache, googly eyes,
+  rosy cheeks, a ring of stars circling your head…), funhouse warps, looks
+  (old film, thermal, night vision, cartoon, a dreamy glow…), star glints
+  that twinkle on the lights in view, fairy dust that trails your hand as
+  you wave, northern lights, drifting bokeh lights and hearts, particles
   (hearts, snow, confetti, bubbles, sparkles), a name tag, a speech bubble,
   reaction bursts, and a translucent CRT-style *where am I* map showing your
   city, nearest cross streets, the hotel, museum or airport you are in, a
@@ -654,15 +657,18 @@ the example shipped in every release shows the format.
   directly (the Devices screen says so); a microphone that is silent there
   may have its capture switched off in `alsamixer` (F4 shows capture).
   `atekvid devices` lists everything the app can use.
-- **Camera busy.** Another program holds the device; close it or pick the test
-  pattern.
+- **Camera busy.** Another program holds the device. atekvid sends a
+  placeholder picture meanwhile and tries the camera again every few
+  seconds, so closing the other program is enough: the picture comes back
+  by itself.
 - **The camera takes a moment, or shows nothing.** Some cameras (the Logitech
   Brio 500 among them) deliver their first picture a second or two after
   they start. atekvid waits up to eight seconds for it, skips frames the
   driver marks as damaged, supplies the tables of MJPEG frames that leave
   them out, reopens a camera that stalls, and tries up to four of the
   camera's modes (the last a small one, for busy USB hubs) before it reports
-  a problem. `atekvid camera-test` saves one frame through the same path and
+  a problem, then keeps trying every few seconds with a placeholder picture
+  standing in. `atekvid camera-test` saves one frame through the same path and
   says how long the first picture took; `~/.cache/atekvid/atekvid.log` lists
   what was tried.
 - **The update was refused.** The archive's signature did not verify against
