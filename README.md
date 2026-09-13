@@ -115,6 +115,8 @@ by hand.
   chorus, mixer, scope, output) patched with cables between colour-coded
   sockets, with knobs to turn, six starting racks to begin from, a spectrum
   analyser and an oscilloscope along the bottom, and racks kept by name.
+  The rack zooms in and out (Ctrl and the wheel, a pinch, or the buttons in
+  its corner) and fits every module on screen with a double-click.
   *Only me* plays it on your speakers; *Everyone* mixes it into what the call
   hears. The hacker games are a field terminal: Keycrack, Cipher and Packet
   run, each with a best score.
@@ -161,9 +163,10 @@ fullscreen · **Ctrl+Q** quit. On the art board: **B** draw · **V** select ·
 **S** shapes · **T** text · **K** stickers · **H** pan · **E** eraser ·
 **Ctrl+Z / Ctrl+Y** undo and redo · **Ctrl+D** duplicate · **Del** delete ·
 **+ − 0** zoom and fit · **Space** or the middle button drags the view ·
-**Ctrl+wheel** zooms. In the Lab, with the synth on: **A** to **;** play
-notes, **Z** and **X** change octave; in the terminal, digits, arrows,
-**Enter** and **Esc** do what they say.
+**Ctrl+wheel** zooms. In the Lab: **+ − 0 1** zoom the rack, fit it and
+show it at actual size; with the synth on, **A** to **;** play notes and
+**Z** and **X** change octave; in the terminal, digits, arrows, **Enter**
+and **Esc** do what they say.
 
 ## Screens
 
@@ -229,10 +232,12 @@ program, with a link to join them.
 
 **The Lab.** The synth rack, with a sequencer driving an oscillator through
 a filter and an amp into a delay, and the screens along the bottom reading
-the sound.
+the sound. The rack zooms out to take in a whole patch and in to read every
+value.
 
 <p align="center"><img src="docs/lab-synth.png" width="820" alt="The modular synthesiser"></p>
 <p align="center"><img src="docs/lab-synth-drone.png" width="820" alt="An alien drone patch"></p>
+<p align="center"><img src="docs/lab-zoom-in.png" width="820" alt="The rack zoomed in"></p>
 
 **The Lab on a call.** The rack takes the stage (the flask in the bar, or
 **L**), the cameras line the side, and with *Everyone* chosen the other
