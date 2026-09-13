@@ -45,7 +45,7 @@ openSUSE, Void and Alpine (x86_64). The script:
 Prefer not to pipe from the network? Download the release archive, check the
 `.sig` and `.sha256`, extract, and run `./install.sh` from it. `install.sh
 --help` lists the options (`--prefix`, `--no-pin`, `--no-autostart`,
-`--uninstall`, …).
+`--autostart`, `--uninstall`, …).
 
 **Updating** happens by itself: the app checks these releases shortly after
 launch and every six hours, verifies the signature, installs the new binary
@@ -78,24 +78,24 @@ by hand.
 - **Calls you can see, and walk into.** When people in your circle are on a
   call, you know: the status bar says who, the People list shows it under
   *Happening now* and says who each person is with, and the tray menu lists
-  it. *Join* walks you straight in, no invitation needed. Anyone on the call
-  can make it private from the call's header; a private call still shows who
-  is in it, but nobody can walk in. People who arrive at the same moment
-  find each other on their own, so a call of four always ends up with
-  everyone connected to everyone. While a call is open, the people in it
-  show as small live pictures under *Happening now* (and when you rest on
-  the status bar's note), refreshed every couple of seconds, with no sound
-  and nothing shared but their camera; everyone in the call sees who is
-  looking in.
-- **Screen sharing.** Share a screen or a single window with everyone in the
-  call; several people can share at once. On Wayland the desktop's own picker
-  chooses what is shared (through the ScreenCast portal and PipeWire); on X11
-  any monitor or window is captured directly, pointer included, and the
-  picker shows a small picture of each screen and window so you see what you
-  are about to share. Shared
-  screens take the stage and the cameras move to a strip beside them. Each
-  share is its own end-to-end encrypted stream, up to 1600 px wide, tuned for
-  legible text.
+  it. *Join* walks you straight in, no invitation needed. A call is open to
+  the circle only while everyone on it lets it be: anyone can make it private
+  from the call's header, and a private call stays out of sight, told only to
+  the people in it and those they invite, and nobody walks in uninvited.
+  People who arrive at the same moment find each other on their own, so a
+  call of four always ends up with everyone connected to everyone. While a
+  call is open, the people in it show as small live pictures under
+  *Happening now* (and when you rest on the status bar's note), refreshed
+  every couple of seconds, with no sound and nothing shared but their camera;
+  everyone in the call sees who is looking in.
+- **Screen sharing.** Share your entire screen or a single window with
+  everyone in the call; several people can share at once. The picker has a
+  section for each: on X11 it lists every monitor and window with a small
+  picture of it, captured directly, pointer included; on Wayland *Choose a
+  screen…* and *Choose a window…* open the desktop's own dialog (the
+  ScreenCast portal, with PipeWire). Shared screens take the stage and the
+  cameras move to a strip beside them. Each share is its own end-to-end
+  encrypted stream, up to 1600 px wide, tuned for legible text.
 - **Art board.** Draw, paint and collage together, live. Twelve brushes
   (pen, marker, crayon, spray, rainbow, neon, and heart, star, sparkle,
   snowflake, confetti and bubble stamps) and an eraser; shapes with a fill;
@@ -153,7 +153,8 @@ by hand.
   the opening of Mozart's *Eine kleine Nachtmusik*, hip hop, trap, drum and
   bass, techno, EDM, dubstep, synthwave, chiptune and an alien theremin.
   Give everyone the same one or each person their own, or add your own
-  music (MP3, M4A, FLAC, OGG or WAV) from the file chooser or by dropping it
+  music (MP3, M4A, AAC, ALAC, FLAC, Ogg Vorbis, Opus or WAV) from the file
+  chooser or by dropping it
   on the Devices screen. A robot voice, made by atekvid too, says who is
   calling: after every third ring of a short ringtone, or over a long one
   while the music dips. Every choice has a listen button.
@@ -304,7 +305,8 @@ and Voice out put your voice through a rack, here the Robot voice.
 
 **Happening now.** A call between two people in the circle, with small live
 pictures of them and a way in from the People list, the status bar and the
-tray.
+tray. *Join* shows who you are joining until they take you in, and can be
+cancelled.
 
 <p align="center"><img src="docs/calls.png" width="820" alt="A call in the circle, ready to join"></p>
 
@@ -313,9 +315,9 @@ grip to resize it, to see your effects up close.
 
 <p align="center"><img src="docs/self-view.png" width="820" alt="A bigger self view in a call"></p>
 
-**Share a screen or a window.** The call bar's screen button opens the
-picker, with a small picture of each screen and window (on Wayland, the
-desktop's own dialog).
+**Share a screen or a window.** The call bar's screen button (or **X**) opens
+the picker: your entire screen in one section, a single window in the other,
+each with a small picture (on Wayland, the desktop's own dialog picks).
 
 <p align="center"><img src="docs/share-picker.png" width="820" alt="The share picker"></p>
 
@@ -457,14 +459,16 @@ or Wayland. Hiding to the tray destroys the window and recreates it on demand,
 because Wayland allows neither hiding nor restoring a window on request; the
 application state lives on regardless. The tray item speaks the
 StatusNotifierItem protocol over D-Bus (pure Rust, `ksni`); notifications use
-`org.freedesktop.Notifications`. The installer adds a `.desktop` entry and a
-login autostart entry (`atekvid --hidden`), and puts the `atekvid-screencast`
-helper next to the app.
+`org.freedesktop.Notifications`. The installer adds a `.desktop` entry and,
+once, a login autostart entry (`atekvid --hidden`): turned off in the
+desktop's startup settings it stays off, `--no-autostart` removes it and
+`--autostart` brings it back. It puts the `atekvid-screencast` helper next to
+the app.
 
 ### Releases and updates
 
-Releases are built on Ubuntu 22.04 by GitHub Actions in the private source
-repository and published here. The archive holds the app, the
+Releases are built from a tag of the private source repository, in Docker on
+Ubuntu 22.04 (glibc 2.35), and published here. The archive holds the app, the
 `atekvid-screencast` helper, the installer and the packaging files. Each archive is signed with the atekvid release
 key using OpenSSH signatures (`ssh-keygen -Y sign`, namespace
 `atekvid-release`); the public half is compiled into the app and written into
@@ -605,7 +609,7 @@ thepearlking = "dubstep"           # someone's own ringtone
 
 [ui]
 tray = true                        # keep running in the tray when the window closes
-open_calls = true                  # let the circle see your calls and walk in
+open_calls = true                  # let the circle see your calls and walk in (everyone on a call must)
 notifications = true
 show_stats = false
 
