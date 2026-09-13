@@ -113,13 +113,24 @@ by hand.
   rack of modules (oscillator, LFO, envelope, filter, amp, noise, sample and
   hold, a sixteen-step sequencer, keys, looper, delay, reverb, wavefolder,
   chorus, mixer, scope, output) patched with cables between colour-coded
-  sockets, with knobs to turn, six starting racks to begin from, a spectrum
+  sockets, with knobs to turn, ten starting racks to begin from (four of them voices), a spectrum
   analyser and an oscilloscope along the bottom, and racks kept by name.
   The rack zooms in and out (Ctrl and the wheel, a pinch, or the buttons in
   its corner) and fits every module on screen with a double-click.
   *Only me* plays it on your speakers; *Everyone* mixes it into what the call
-  hears. The hacker games are a field terminal: Keycrack, Cipher and Packet
-  run, each with a best score.
+  hears. Voice in and Voice out put your own voice through the rack, so a
+  call hears the rack instead of your microphone. The hacker games are a
+  field terminal: Keycrack, Cipher and Packet run, each with a best score.
+- **Voice changer.** Nine voices (natural, robot, deep, chipmunk, alien,
+  monster, hall, echo, radio) applied to your microphone before it is sent,
+  so everyone on the call hears the changed voice, with no delay added.
+  It is on the call bar (the wave button) and in the Effects panel, with a
+  hear-yourself switch for trying a voice on headphones. The mute button
+  wears a small mark while your voice is changed.
+- **A ring that says who it is.** Incoming calls ring with a bright bell
+  figure, and after every third ring a robot voice says who is calling. The
+  voice is made by atekvid itself, so nothing extra needs installing; the
+  Devices screen has a switch and a Hear it button.
 - **Effects** baked into your picture, so everyone sees them: face-tracked
   props (sunglasses, hats, crown, cat and bunny ears, mustache, googly eyes…),
   funhouse warps, looks (old film, thermal, night vision, cartoon…), particles
@@ -251,6 +262,13 @@ people hear it, microphone muted or not.
 <p align="center"><img src="docs/lab-keycrack.png" width="820" alt="Keycrack"></p>
 <p align="center"><img src="docs/lab-cipher.png" width="820" alt="Cipher"></p>
 <p align="center"><img src="docs/lab-packet.png" width="820" alt="Packet run"></p>
+
+**Voice changer.** The wave button on the call bar opens the voices, and the
+mute button wears a small mark while yours is changed. In the Lab, Voice in
+and Voice out put your voice through a rack, here the Robot voice.
+
+<p align="center"><img src="docs/voice-call.png" width="820" alt="The voice changer on a call"></p>
+<p align="center"><img src="docs/voice-rack.png" width="820" alt="The Robot voice rack"></p>
 
 **Drop box in a call.** A file offered by a participant, ready to download.
 
