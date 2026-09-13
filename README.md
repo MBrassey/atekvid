@@ -128,9 +128,14 @@ by hand.
   the sound server's WebRTC canceller, and a quality selector. Plug a webcam
   or a headset in while the app runs and it is picked up within a second; the
   device you chose is used again whenever it comes back.
+- **Temporal monitoring.** The Health page reads link steadiness the way
+  A-TEK reads a planet: as rift activity on the Planetary Rift Activity Index,
+  from Pluto's 0.5% up.
 - A launch splash, soft fades, glass surfaces, a custom title bar and window
   controls, a hand-drawn icon set, and quiet sounds for rings, messages, files
   and reactions.
+- **Something hidden.** A small probe keeps watch beside the version number.
+  It goes somewhere.
 
 Keyboard in a call: **M** mute · **V** camera · **X** share screen ·
 **A** art board · **E** effects · **C** chat · **D** drop box · **I** add
@@ -212,7 +217,20 @@ the side; a slim tool strip stays over the board.
 <p align="center"><img src="docs/files.png" width="820" alt="Drop box"></p>
 <p align="center"><img src="docs/effects.png" width="820" alt="Effects"></p>
 <p align="center"><img src="docs/devices.png" width="820" alt="Devices"></p>
-<p align="center"><img src="docs/health.png" width="820" alt="Health"></p>
+<p align="center"><img src="docs/health-temporal.png" width="820" alt="Health, with the temporal monitoring readout"></p>
+
+<details>
+<summary><b>What the probe does</b> (a small spoiler)</summary>
+
+The probe opens GeometryKing: a one-key rhythm runner through the planets in
+order of rift activity, with a tune composed for each by a small synthesiser,
+practice markers, an endless run, and The Core, a rotating icositetrachoron
+to turn over in four dimensions.
+
+<p align="center"><img src="docs/game-title.png" width="820" alt="GeometryKing"></p>
+<p align="center"><img src="docs/game-play.png" width="820" alt="A trial"></p>
+<p align="center"><img src="docs/game-core.png" width="820" alt="The Core"></p>
+</details>
 
 **First run.** With the GitHub CLI installed, the device links itself: signed
 out, it signs you in; then GitHub asks once, in the browser, whether atekvid
