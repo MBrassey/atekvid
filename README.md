@@ -68,7 +68,9 @@ by hand.
 
 - **Calls** with H.264 video (up to 1080p, adapting to the connection) and
   Opus voice, direct between machines when the network allows, through an
-  encrypted relay otherwise.
+  encrypted relay otherwise, over ordinary HTTPS, so hotel, airport and
+  plane Wi-Fi and a phone's hotspot still carry a call. Each side remembers
+  where the others were last reached.
 - **Group calls.** Call one person, then add the others from *Add people*.
   Every participant holds a direct encrypted media session with every other
   participant, everyone sees and hears everyone, and every connection has its
@@ -133,7 +135,9 @@ by hand.
   analyser and an oscilloscope along the bottom, and up to ten racks of your
   own kept by name.
   The rack zooms in and out (Ctrl and the wheel, a pinch, or the buttons in
-  its corner) and fits every module on screen with a double-click.
+  its corner) and fits every module on screen with a double-click. Any
+  module can be taken out, the Output too (its ×, a right-click, or Delete
+  or Backspace), and Undo or Ctrl+Z puts it back as it was.
   *Only me* plays it on your speakers; *Everyone* mixes it into what the call
   hears. Voice in and Voice out put your own voice through the rack, so a
   call hears the rack instead of your microphone. The hacker games are a
@@ -187,9 +191,9 @@ by hand.
   hidden with no call, the camera and microphone are released, so other
   programs can use the webcam.
 - **Devices.** Camera, resolution and frame rate, microphone with meter,
-  automatic level, gain and noise gate, speaker with test tone, one-click
-  echo cancellation using the sound server's WebRTC canceller, and a quality
-  selector. Plug a webcam or a headset in while the app runs and it is picked
+  automatic level, gain and noise gate, speaker with test tone, echo
+  cancellation using the sound server's WebRTC canceller (on by itself
+  during calls on speakers), and a quality selector. Plug a webcam or a headset in while the app runs and it is picked
   up within a second; the device you chose is used again whenever it comes
   back.
 - **Sound that keeps working.** atekvid talks to PipeWire or PulseAudio,
@@ -200,7 +204,9 @@ by hand.
   quiet laptop microphone as easy to hear as a headset. A microphone or
   speaker muted or turned all the way down in the system's mixer, or a
   microphone that sends no sound at all, is shown on the Devices screen and
-  during a call, with a button that unmutes it.
+  during a call, with a button that unmutes it. On a laptop's own speakers
+  the echo canceller turns on by itself for the call, so the other side does
+  not hear themselves come back; with headphones or a headset it stays off.
 - **Temporal monitoring.** The Health page reads link steadiness the way
   A-TEK reads a planet: as rift activity on the Planetary Rift Activity Index,
   from Pluto's 0.5% up.
@@ -218,7 +224,8 @@ fullscreen · **Ctrl+Q** quit. On the art board: **B** draw · **V** select ·
 **Ctrl+Z / Ctrl+Y** undo and redo · **Ctrl+D** duplicate · **Del** delete ·
 **+ − 0** zoom and fit · **Space** or the middle button drags the view ·
 **Ctrl+wheel** zooms. In the Lab: **+ − 0 1** zoom the rack, fit it and
-show it at actual size; with the synth on, **A** to **;** play notes and
+show it at actual size; **Del** or **Backspace** takes out the selected
+module and **Ctrl+Z** puts it back; with the synth on, **A** to **;** play notes and
 **Z** and **X** change octave; in the terminal, digits, arrows, **Enter**
 and **Esc** do what they say.
 
