@@ -90,7 +90,9 @@ by hand.
 - **Screen sharing.** Share a screen or a single window with everyone in the
   call; several people can share at once. On Wayland the desktop's own picker
   chooses what is shared (through the ScreenCast portal and PipeWire); on X11
-  any monitor or window is captured directly, pointer included. Shared
+  any monitor or window is captured directly, pointer included, and the
+  picker shows a small picture of each screen and window so you see what you
+  are about to share. Shared
   screens take the stage and the cameras move to a strip beside them. Each
   share is its own end-to-end encrypted stream, up to 1600 px wide, tuned for
   legible text.
@@ -99,7 +101,7 @@ by hand.
   snowflake, confetti and bubble stamps) and an eraser; shapes with a fill;
   text in six typefaces with an outline; the full emoji set; the effects'
   props as stickers; and pictures from disk (PNG, JPEG, WebP, BMP, animated
-  GIF) dropped straight onto the board. Two sticker packs: a gamer pack (a
+  GIF) dropped straight onto the board or picked with *Choose pictures…*. Two sticker packs: a gamer pack (a
   pixel cube, spikes, a jump orb and a portal, a creeper, blocks, gems and
   tools, TNT, a blocky avatar, a robot, a rocket, 8-bit hearts and stars) and
   a sea-and-magic pack (mermaids, shells, fish, a dolphin, angels and wings,
@@ -171,7 +173,9 @@ by hand.
 - **Chat**, end-to-end encrypted per session, with Markdown, links, a custom
   emoji set drawn in the app's palette, typing indicator and delivery ticks.
   In a group call the chat drawer reaches everyone in the call.
-- **Drop box.** Drag a file onto the window; the other person decides whether
+- **Drop box.** Drag files onto the window, or press *Choose files…* to pick
+  them (pictures, videos, documents, anything) in your desktop's own file
+  chooser; the other person decides whether
   to download it. Files stream directly over the encrypted link with progress
   and previews, and land in `~/Downloads/atekvid/`.
 - **Snapshots and recording** (MKV, remote video with both voices mixed),
@@ -308,6 +312,12 @@ tray.
 grip to resize it, to see your effects up close.
 
 <p align="center"><img src="docs/self-view.png" width="820" alt="A bigger self view in a call"></p>
+
+**Share a screen or a window.** The call bar's screen button opens the
+picker, with a small picture of each screen and window (on Wayland, the
+desktop's own dialog).
+
+<p align="center"><img src="docs/share-picker.png" width="820" alt="The share picker"></p>
 
 **Drop box in a call.** A file offered by a participant, ready to download.
 
