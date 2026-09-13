@@ -89,10 +89,12 @@ by hand.
   hearts of every kind, a rainbow, a castle, a wand, a tiara and more). A
   pixel brush paints squares on a grid, a glitter brush sparkles in every
   colour, and starter boards give scenes to add to and pixel pictures to
-  colour in. Everything can be selected, moved,
-  scaled, rotated, layered, duplicated and undone. Boards have a name and a
-  backdrop (ocean, blocky world, neon, rainbow, clouds, hearts, paper, sky,
-  night and more), live in a gallery with thumbnails, save themselves, are offered
+  colour in. Everything can be selected, moved, scaled, rotated, layered,
+  duplicated and undone; clearing a board or deleting one for everyone asks
+  twice. Boards have a name and a backdrop (ocean, blocky world, neon,
+  rainbow, clouds, hearts, paper, sky, night and more), live in a gallery
+  with thumbnails, save themselves, merge cleanly when two devices drew
+  apart, are offered
   to everyone who comes online, and export to PNG. In a call the board takes
   the stage with the cameras beside it; strokes appear on the others' screens
   as they are drawn, with everyone's cursor and name.
@@ -164,9 +166,10 @@ person sharing sees their own share with a *Stop* button.
 
 <p align="center"><img src="docs/call-share.png" width="820" alt="A shared screen in a call"></p>
 
-**Art board.** A shared board two people are drawing on: brushes, shapes,
-text in several typefaces, emoji, stickers and an animated picture, with the
-tools down the side and the brushes along the top.
+**Art board.** A shared board two people are drawing on: brushes (each
+chip shows what it paints), shapes, text in several typefaces, emoji,
+stickers and an animated picture, with the tools down the side, the other
+person's pen on the board, and everything sized for small hands.
 
 <p align="center"><img src="docs/art-board.png" width="820" alt="The art board"></p>
 
@@ -184,8 +187,9 @@ a place to add a picture from disk (or drop one on the board).
 
 <p align="center"><img src="docs/art-stickers.png" width="820" alt="Stickers on the art board"></p>
 
-**The gallery.** Every board the circle has, with a thumbnail, its owner and
-what is on it; a new board takes a name and a backdrop.
+**The gallery.** Starting points first (a blank board, five scenes, eight
+pixel pictures to colour in), then every board the circle has, with a
+thumbnail, its owner and what is on it.
 
 <p align="center"><img src="docs/art-gallery.png" width="820" alt="The board gallery"></p>
 
@@ -346,7 +350,7 @@ sha256sum -c atekvid-x86_64-unknown-linux-gnu.tar.gz.sha256
 | Session keys | Inside every authenticated connection, an ephemeral X25519 exchange per link and per call, HKDF-SHA256 with both endpoint ids and the context (link or call id) in the salt, giving forward secrecy and one key set per direction. |
 | Payloads | ChaCha20-Poly1305 over every chat message, audio packet, video picture and file chunk, with the packet header as associated data. Nonces are `lane ‖ counter`: control, audio, video, the shared screen, the art board and each file transfer have their own lane and monotonic counter, so a nonce is never reused. |
 | Replay | The receiver keeps an anti-replay window per lane (RFC 6479 style, 2048 deep): every packet is accepted once, late packets within the window are fine, anything older or seen before is dropped. Chat is also de-duplicated by message id. |
-| Bounds | A device flooding control messages loses its link; reactions, typing notices and file offers are rate-limited per device; a link carries a bounded number of pictures in flight, each bounded in size, and nothing is buffered for pictures outside a call; decoded pictures beyond 4096×4096 are refused; chat messages are capped at 8 KiB. Art board changes are rate-limited per device and validated (bounded coordinates, points, text and element counts); pictures for the board are content-addressed, capped at 8 MiB and decoded no larger than 1200 px a side. |
+| Bounds | A device flooding control messages loses its link; reactions, typing notices and file offers are rate-limited per device; a link carries a bounded number of pictures in flight, each bounded in size, and nothing is buffered for pictures outside a call; decoded pictures beyond 4096×4096 are refused; chat messages are capped at 8 KiB. Art board changes are rate-limited per device and validated (bounded coordinates, points, revisions, text and element counts); an element carries its author and only that device may add it; a board may only be deleted by its owner and stays deleted; board pictures are content-addressed, capped at 8 MiB, decoded with size limits no larger than 1200 px a side, and accepted only from a device they were asked from; snapshot and picture requests are answered at most every few seconds; bulk board data travels on its own streams so it cannot hold up call signalling. |
 | Accounts | A key listed under two circle accounts is trusted for neither; each login's numeric GitHub id is pinned, so a login that changes hands is not the same person; a key removed from GitHub loses its link at the next refresh; GitHub's rate limits are honoured with validators, so unchanged answers cost no quota. |
 | Verification | A 30-digit safety code per connection, derived from the same exchange, shown in the call. If both screens agree, nobody is in the middle. |
 | Files | Chunks are bound to the transfer id and index, sizes are enforced, names are sanitised, writes go to a `.part` file renamed on completion. Nothing is downloaded until the recipient accepts. |
